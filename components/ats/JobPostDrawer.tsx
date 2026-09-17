@@ -397,14 +397,16 @@ function JobApplicationDrawerCard({
     APPLICATION_STATUS_CONFIG[ApplicationPhase.APPLIED];
 
   const hasAppAiScore = typeof app.aiScore === "number" && app.aiScore >= 0;
-  const appAiScore = hasAppAiScore ? app.aiScore : 85;
+  const appAiScore = hasAppAiScore ? app.aiScore : null;
 
   const appTierConfig =
-    app.aiTier === AiScreeningTier.HIGH || appAiScore >= 80
-      ? { bg: "bg-emerald-500 text-white", label: "Tier 1 (Xuất sắc)" }
-      : app.aiTier === AiScreeningTier.MEDIUM || appAiScore >= 50
-        ? { bg: "bg-amber-500 text-white", label: "Tier 2 (Kho tiềm năng)" }
-        : { bg: "bg-rose-500 text-white", label: "Tier 3 (Không đạt sơ bộ)" };
+    appAiScore === null
+      ? { bg: "bg-muted text-muted-foreground", label: "Tier N/A" }
+      : app.aiTier === AiScreeningTier.HIGH || appAiScore >= 80
+        ? { bg: "bg-emerald-500 text-white", label: "Tier 1 (Xuất sắc)" }
+        : app.aiTier === AiScreeningTier.MEDIUM || appAiScore >= 50
+          ? { bg: "bg-amber-500 text-white", label: "Tier 2 (Kho tiềm năng)" }
+          : { bg: "bg-rose-500 text-white", label: "Tier 3 (Không đạt sơ bộ)" };
 
   const toggleSubmissionDetails = (subId: string) => {
     setExpandedSubId((prev) => (prev === subId ? null : subId));
@@ -489,7 +491,7 @@ function JobApplicationDrawerCard({
               <div className="flex items-center gap-2.5 flex-wrap">
                 <div className="flex items-baseline gap-1">
                   <span className="text-2xl font-black font-mono tracking-tight text-foreground">
-                    {appAiScore}
+                    {appAiScore === null ? "N/A" : appAiScore}
                   </span>
                   <span className="text-[10px] font-bold text-muted-foreground">
                     /100
@@ -587,12 +589,15 @@ function JobApplicationDrawerCard({
                           const subTier = sub.aiTier || app.aiTier;
 
                           const subTierConfig =
-                            subTier === AiScreeningTier.HIGH || subScore >= 80
-                              ? "bg-emerald-500 text-white"
-                              : subTier === AiScreeningTier.MEDIUM ||
-                                  subScore >= 50
-                                ? "bg-amber-500 text-white"
-                                : "bg-rose-500 text-white";
+                            subScore === null
+                              ? "bg-muted text-muted-foreground"
+                              : subTier === AiScreeningTier.HIGH ||
+                                  subScore >= 80
+                                ? "bg-emerald-500 text-white"
+                                : subTier === AiScreeningTier.MEDIUM ||
+                                    subScore >= 50
+                                  ? "bg-amber-500 text-white"
+                                  : "bg-rose-500 text-white";
 
                           const isSubRowExpanded = expandedSubId === sub.id;
 
@@ -660,7 +665,7 @@ function JobApplicationDrawerCard({
                                   <span
                                     className={`px-1.5 py-0.5 rounded font-mono font-bold text-[10px] ${subTierConfig}`}
                                   >
-                                    {subScore}%
+                                    {subScore === null ? "N/A" : `${subScore}%`}
                                   </span>
                                 </td>
 

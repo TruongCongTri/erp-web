@@ -68,6 +68,7 @@ import {
 } from "@/components/ui/dialog";
 import AutomationChannelsPanel, {
   AutomationChannelsPanelHandle,
+  AUTOMATION_CHANNELS_ENABLED,
 } from "@/components/ats/publishing/AutomationChannelsPanel";
 import AutomationJobStatusGrid from "@/components/ats/publishing/AutomationJobStatusGrid";
 import {
@@ -257,10 +258,10 @@ export function StructuredAiReasoning({
   );
 }
 
-// ─── 3 KÊNH HỖ TRỢ XUẤT BẢN TRỰC TIẾP HIỆN TẠI ─────────────────────────────────
+// ─── KÊNH HỖ TRỢ XUẤT BẢN TRỰC TIẾP HIỆN TẠI ───────────────────────────────────
+// Chỉ Website nội bộ đang hoạt động; các kênh khác đang trong quá trình phát
+// triển và hiển thị ở trạng thái khoá ("Sắp ra mắt ở v2").
 const SUPPORTED_PUBLISH_PLATFORMS: PlatformSource[] = [
-  PlatformSource.LINKEDIN,
-  PlatformSource.FACEBOOK,
   PlatformSource.COMPANY_WEBSITE,
 ];
 
@@ -624,14 +625,16 @@ function JobApplicationPipelineCard({
     APPLICATION_STATUS_CONFIG[ApplicationPhase.APPLIED];
 
   const hasAppAiScore = typeof app.aiScore === "number" && app.aiScore >= 0;
-  const appAiScore = hasAppAiScore ? app.aiScore : 85;
+  const appAiScore = hasAppAiScore ? app.aiScore : null;
 
   const appTierConfig =
-    app.aiTier === AiScreeningTier.HIGH || appAiScore >= 80
-      ? { bg: "bg-emerald-500 text-white", label: "Tier 1 (Xuất sắc)" }
-      : app.aiTier === AiScreeningTier.MEDIUM || appAiScore >= 50
-        ? { bg: "bg-amber-500 text-white", label: "Tier 2 (Kho tiềm năng)" }
-        : { bg: "bg-rose-500 text-white", label: "Tier 3 (Không đạt sơ bộ)" };
+    appAiScore === null
+      ? { bg: "bg-muted text-muted-foreground", label: "Tier N/A" }
+      : app.aiTier === AiScreeningTier.HIGH || appAiScore >= 80
+        ? { bg: "bg-emerald-500 text-white", label: "Tier 1 (Xuất sắc)" }
+        : app.aiTier === AiScreeningTier.MEDIUM || appAiScore >= 50
+          ? { bg: "bg-amber-500 text-white", label: "Tier 2 (Kho tiềm năng)" }
+          : { bg: "bg-rose-500 text-white", label: "Tier 3 (Không đạt sơ bộ)" };
 
   const toggleSubmissionDetails = (subId: string) => {
     setExpandedSubId((prev) => (prev === subId ? null : subId));
@@ -715,7 +718,7 @@ function JobApplicationPipelineCard({
               <div className="flex items-center gap-2.5 flex-wrap">
                 <div className="flex items-baseline gap-1">
                   <span className="text-2xl font-black font-mono tracking-tight text-foreground">
-                    {appAiScore}
+                    {appAiScore === null ? "N/A" : appAiScore}
                   </span>
                   <span className="text-[10px] font-bold text-muted-foreground">
                     /100
@@ -818,12 +821,15 @@ function JobApplicationPipelineCard({
                           const subTier = sub.aiTier || app.aiTier;
 
                           const subTierConfig =
-                            subTier === AiScreeningTier.HIGH || subScore >= 80
-                              ? "bg-emerald-500 text-white"
-                              : subTier === AiScreeningTier.MEDIUM ||
-                                  subScore >= 50
-                                ? "bg-amber-500 text-white"
-                                : "bg-rose-500 text-white";
+                            subScore === null
+                              ? "bg-muted text-muted-foreground"
+                              : subTier === AiScreeningTier.HIGH ||
+                                  subScore >= 80
+                                ? "bg-emerald-500 text-white"
+                                : subTier === AiScreeningTier.MEDIUM ||
+                                    subScore >= 50
+                                  ? "bg-amber-500 text-white"
+                                  : "bg-rose-500 text-white";
 
                           const isSubRowExpanded = expandedSubId === sub.id;
 
@@ -882,7 +888,7 @@ function JobApplicationPipelineCard({
                                   <span
                                     className={`px-1.5 py-0.5 rounded font-mono font-bold text-[10px] ${subTierConfig}`}
                                   >
-                                    {subScore}%
+                                    {subScore === null ? "N/A" : `${subScore}%`}
                                   </span>
                                 </td>
 
@@ -1609,10 +1615,16 @@ ${job.extraBenefits ? `* Quyền lợi bổ sung: ${job.extraBenefits}` : ""}
               collapsedWidth="lg:w-12"
             >
               <div className="space-y-4 max-w-3xl text-xs">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <p className="text-[11px] text-muted-foreground">
                     Đăng tin tự động lên các nhóm Facebook, TopCV và CareerViet
                     thông qua hệ thống automation.
+                    {!AUTOMATION_CHANNELS_ENABLED && (
+                      <span className="block mt-0.5 text-amber-600 font-medium">
+                        Tính năng thêm kênh mới đang trong quá trình phát
+                        triển — hiện chỉ hiển thị trạng thái các kênh đã có.
+                      </span>
+                    )}
                   </p>
                   <ActionButton
                     variant="outline"
@@ -1622,9 +1634,23 @@ ${job.extraBenefits ? `* Quyền lợi bổ sung: ${job.extraBenefits}` : ""}
                       "publishing_automation:manage:any",
                     ]}
                     permissionBehavior="disable"
+                    disabled={!AUTOMATION_CHANNELS_ENABLED}
+                    tooltip={
+                      AUTOMATION_CHANNELS_ENABLED
+                        ? undefined
+                        : "Tính năng đang phát triển"
+                    }
                     onClick={() => setShowAddAutomationChannels(true)}
                   >
-                    <PlusCircle size={12} /> Thêm kênh
+                    {AUTOMATION_CHANNELS_ENABLED ? (
+                      <>
+                        <PlusCircle size={12} /> Thêm kênh
+                      </>
+                    ) : (
+                      <>
+                        <Lock size={12} /> Đang phát triển
+                      </>
+                    )}
                   </ActionButton>
                 </div>
                 <AutomationJobStatusGrid atsJobPostingId={id} />

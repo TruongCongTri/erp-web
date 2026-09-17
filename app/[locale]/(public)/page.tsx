@@ -63,14 +63,14 @@ export default async function WelcomePage({
             >
               <BookOpen size={18} /> Xem tài liệu hướng dẫn
             </Link>
-            <Link
+            {/* <Link
               href={`/${locale}/demo-btn`}
               className="w-full sm:w-auto flex items-center justify-center gap-2 bg-card border border-border text-foreground px-8 py-3.5 rounded-lg font-bold hover:bg-muted transition-all active:scale-95"
             >
               <BookOpen size={18} /> Demo Action btns
-            </Link>
-            <HealthCheckButton />
-            <ActionButton />
+            </Link> */}
+            {/* <HealthCheckButton /> */}
+            {/* <ActionButton /> */}
           </div>
         </div>
       </section>

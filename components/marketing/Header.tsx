@@ -6,6 +6,7 @@ import { Building2, ArrowRight, LayoutDashboard, Loader2 } from "lucide-react";
 import { useGetMeQuery } from "@/lib/store/authApiSlice";
 import { useSelector } from "react-redux";
 import { RootState } from "@/lib/store/store";
+import AppImage from "../ui/AppImage";
 
 export default function Header({ locale }: { locale: string }) {
   // 1. Kích hoạt gọi API kiểm tra đăng nhập ngầm (RTK tự lo cache)
@@ -19,12 +20,18 @@ export default function Header({ locale }: { locale: string }) {
   return (
     <header className="px-6 py-4 flex items-center justify-between border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
       <Link href={`/${locale}`} className="flex items-center gap-2 group">
-        <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold shadow-sm group-hover:scale-105 transition-transform">
-          <Building2 size={18} />
-        </div>
-        <span className="text-lg font-bold tracking-tight text-foreground">
-          Chính Nam ERP
-        </span>
+        <AppImage
+            src="/icon.png"
+            alt="Logo"
+            width={28}
+            height={28}
+            className="flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform"
+          />
+          <span
+            className={`font-bold text-lg ml-3 transition-opacity duration-300 opacity-100`}
+          >
+            Chính Nam
+          </span>
       </Link>
 
       <div className="flex items-center gap-4">

@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { Building2, Mail, Phone, MapPin } from "lucide-react";
 import CurrentYear from "@/components/ui/CurrentYear";
+import AppImage from "../ui/AppImage";
 
 export default function Footer({ locale }: { locale: string }) {
   return (
@@ -11,11 +12,17 @@ export default function Footer({ locale }: { locale: string }) {
           {/* Brand Column */}
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-6">
-              <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center font-bold">
-                <Building2 size={18} />
-              </div>
-              <span className="text-xl font-black tracking-tight text-foreground">
-                ConstructERP
+              <AppImage
+                src="/icon.png"
+                alt="Logo"
+                width={28}
+                height={28}
+                className="flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform"
+              />
+              <span
+                className={`font-bold text-lg ml-3 transition-opacity duration-300 opacity-100`}
+              >
+                Chính Nam
               </span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
@@ -24,14 +31,14 @@ export default function Footer({ locale }: { locale: string }) {
             </p>
             <div className="space-y-2 pt-2">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Mail size={14} /> contact@constructerp.vn
+                <Mail size={14} /> contact@chinhnamerp.vn
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Phone size={14} /> 1900 8888
+                <Phone size={14} /> 0944454199
               </div>
               <div className="flex items-start gap-2 text-sm text-muted-foreground">
                 <MapPin size={14} className="mt-0.5 flex-shrink-0" />
-                <span>Tòa nhà Innovation, Khu Công nghệ cao, TP.HCM</span>
+                <span>C20 Đ. N4, Trấn Biên, Đồng Nai 810000, Vietnam</span>
               </div>
             </div>
           </div>
@@ -171,7 +178,7 @@ export default function Footer({ locale }: { locale: string }) {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-xs text-muted-foreground font-medium">
-            © <CurrentYear /> ConstructERP. Bảo lưu mọi quyền.
+            © <CurrentYear /> ChinhNamDX.
           </p>
           <div className="flex items-center gap-4 text-xs font-semibold text-muted-foreground">
             <span>Tiếng Việt</span>

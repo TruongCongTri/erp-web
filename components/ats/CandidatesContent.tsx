@@ -794,18 +794,18 @@ export default function CandidatesContent() {
                 {cfg.label}
               </span>
 
-              {hasAiScore && (
-                <div className="flex items-center gap-1 text-[10px]">
-                  <span
-                    className={`font-mono font-bold px-1.5 py-0.2 rounded ${tierBg}`}
-                  >
-                    {score}%
-                  </span>
-                  <span className="text-muted-foreground text-[9px] flex items-center gap-0.5">
-                    <BrainCircuit size={10} className="text-primary" /> AI Match
-                  </span>
-                </div>
-              )}
+              <div className="flex items-center gap-1 text-[10px]">
+                <span
+                  className={`font-mono font-bold px-1.5 py-0.2 rounded ${
+                    hasAiScore ? tierBg : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {hasAiScore ? `${score}%` : "N/A"}
+                </span>
+                <span className="text-muted-foreground text-[9px] flex items-center gap-0.5">
+                  <BrainCircuit size={10} className="text-primary" /> AI Match
+                </span>
+              </div>
             </div>
           );
         },
@@ -1182,13 +1182,13 @@ export default function CandidatesContent() {
 
                 <div className="flex items-center justify-between pt-2 border-t border-border/40 text-[10px]">
                   <div className="flex items-center gap-1.5">
-                    {hasAiScore && (
-                      <span
-                        className={`font-mono font-bold px-1.5 py-0.5 rounded ${tierBg}`}
-                      >
-                        {score}%
-                      </span>
-                    )}
+                    <span
+                      className={`font-mono font-bold px-1.5 py-0.5 rounded ${
+                        hasAiScore ? tierBg : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {hasAiScore ? `${score}%` : "N/A"}
+                    </span>
                     <span className="text-muted-foreground">
                       {c.applications?.length || 0} lượt nộp
                     </span>

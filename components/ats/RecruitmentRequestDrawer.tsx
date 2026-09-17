@@ -318,8 +318,8 @@ export default function RecruitmentRequestDrawer({
                 Chưa có bản thảo JD
               </p>
               <p className="text-[11px] text-muted-foreground max-w-xs mx-auto">
-                Chuyên viên Nhân sự có thể sử dụng AI Gemini để tự động chuyển
-                đổi yêu cầu này thành bản mô tả JD chuyên nghiệp.
+                Chuyên viên Nhân sự có thể sử dụng AI để tự động chuyển đổi
+                yêu cầu này thành bản mô tả JD chuyên nghiệp.
               </p>
               <button
                 onClick={() => {

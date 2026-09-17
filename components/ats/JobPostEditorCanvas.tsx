@@ -197,7 +197,7 @@ export function JobPostEditorCanvas({
   const handleExecuteAiSuggest = async () => {
     try {
       gooeyToast.info(
-        "Gemini AI đang phân tích và chuẩn hóa tiêu chuẩn công việc...",
+        "AI đang phân tích và chuẩn hóa tiêu chuẩn công việc...",
       );
       const res = await aiSuggestJd({
         rawPrompt: aiCustomPrompt,
@@ -304,7 +304,7 @@ export function JobPostEditorCanvas({
             </h3>
             <p className="text-xs text-muted-foreground">
               Bạn có thể tự nhập từng thông số, nạp từ thư viện JD mẫu doanh
-              nghiệp, hoặc để Gemini AI tự động chuyển hóa yêu cầu thành JD
+              nghiệp, hoặc để AI tự động chuyển hóa yêu cầu thành JD
               chuẩn hóa.
             </p>
           </div>
@@ -372,7 +372,7 @@ export function JobPostEditorCanvas({
                     AI gợi ý JD
                   </h4>
                   <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                    Nhập tóm tắt mô tả công việc, Gemini sẽ tự động điền toàn bộ
+                    Nhập tóm tắt mô tả công việc, AI sẽ tự động điền toàn bộ
                     4 biểu mẫu.
                   </p>
                 </div>
@@ -1403,13 +1403,13 @@ export function JobPostEditorCanvas({
         </div>
       )}
 
-      {/* ─── MODAL 2: GỢI Ý BẢN THẢO BẰNG GEMINI AI ─── */}
+      {/* ─── MODAL 2: GỢI Ý BẢN THẢO BẰNG AI ─── */}
       {showAiPromptModal && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
           <div className="bg-card rounded-xl border border-border shadow-2xl w-full max-w-lg p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-border pb-3">
               <h3 className="text-sm font-bold text-foreground flex items-center gap-2 text-purple-600">
-                <Wand2 size={16} /> Soạn thảo tự động bằng Gemini AI
+                <Wand2 size={16} /> Soạn thảo tự động bằng AI
               </h3>
               <button
                 onClick={() => setShowAiPromptModal(false)}

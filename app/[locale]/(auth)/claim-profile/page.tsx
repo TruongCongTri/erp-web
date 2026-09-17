@@ -76,14 +76,28 @@ export default function ClaimProfilePage() {
   }, [step, countdown, router]);
 
   // ─── SMART CODE SPLITTING LOGIC ───
-  const handleCodePaste = (e: ClipboardEvent<HTMLInputElement>) => {
-    const pastedData = e.clipboardData.getData("text/plain").trim();
-    const match = pastedData.match(/^([a-zA-Z]+)[-_\s]*(\d+)$/);
+  // Department codes can themselves contain dashes/digits (e.g. "HC-NS-1024"
+  // is department "HC-NS" + number "1024", "D12-004" is department "D12" +
+  // number "004"), and the dept/number separator can be "-", "_", "." or
+  // whitespace (e.g. "CN-FQ.2603" is department "CN-FQ" + number "2603").
+  // So we split on the LAST run of separator characters that is immediately
+  // followed by digits to the end, rather than on the first "-" found.
+  const splitEmployeeCode = (
+    value: string,
+  ): { dept: string; num: string } | null => {
+    const match = value.trim().match(/^(.+?)[-_.\s]+(\d+)$/);
+    if (!match) return null;
+    return { dept: match[1].toUpperCase(), num: match[2] };
+  };
 
-    if (match) {
+  const handleCodePaste = (e: ClipboardEvent<HTMLInputElement>) => {
+    const pastedData = e.clipboardData.getData("text/plain");
+    const split = splitEmployeeCode(pastedData);
+
+    if (split) {
       e.preventDefault();
-      setValue("departmentCode", match[1].toUpperCase());
-      setValue("employeeNumber", match[2]);
+      setValue("departmentCode", split.dept);
+      setValue("employeeNumber", split.num);
       clearErrors(["departmentCode", "employeeNumber"]);
       document.getElementById("employeeNumber")?.focus();
     }
@@ -95,10 +109,10 @@ export default function ClaimProfilePage() {
 
   const onDeptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.toUpperCase();
-    if (val.includes("-")) {
-      const parts = val.split("-");
-      setValue("departmentCode", parts[0]);
-      if (parts[1]) setValue("employeeNumber", parts[1]);
+    const split = splitEmployeeCode(val);
+    if (split) {
+      setValue("departmentCode", split.dept);
+      setValue("employeeNumber", split.num);
       clearErrors(["departmentCode", "employeeNumber"]);
       document.getElementById("employeeNumber")?.focus();
     } else {

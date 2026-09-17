@@ -41,6 +41,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { AuthUser } from "@/types/modelsver2";
 import { useSelector } from "react-redux";
 import { RootState } from "@/lib/store/store";
+import { useGetNotificationsQuery } from "@/lib/store/notificationsApiSlice";
 
 interface NavItem {
   id: string;
@@ -90,7 +91,7 @@ const topNavItems: NavItem[] = [
     label: "Thông báo",
     icon: <Bell size={18} />,
     href: "/vi/notifications",
-    badge: 3,
+    // badge được gán động từ số thông báo chưa đọc (xem `filteredTopNavItems`)
   },
   {
     id: "home",
@@ -522,6 +523,15 @@ export default function Sidebar({
 
   const { canAccessResource } = usePermissions();
 
+  // Dùng chung cache RTK Query với chuông thông báo ở Topbar -> badge luôn khớp
+  const { data: notifRes } = useGetNotificationsQuery(undefined, {
+    skip: !user,
+  });
+  const unreadCount = useMemo(
+    () => (notifRes?.data || []).filter((n) => !n.isRead).length,
+    [notifRes],
+  );
+
   const [isHovered, setIsHovered] = useState(false);
   const [activeDeptId, setActiveDeptId] = useState<string | null>(null);
 
@@ -544,7 +554,7 @@ export default function Sidebar({
       <>
         <div className="relative flex-shrink-0 flex items-center justify-center w-6 h-6">
           {item.icon}
-          {item.badge && item.badge > 0 && (
+          {!!item.badge && item.badge > 0 && (
             <span
               className={`absolute -top-1 -right-1 bg-red-500 rounded-full flex items-center justify-center text-white transition-all ${
                 isHovered || mobileOpen
@@ -552,7 +562,11 @@ export default function Sidebar({
                   : "w-2 h-2 text-[0px]"
               }`}
             >
-              {isHovered || mobileOpen ? item.badge : ""}
+              {isHovered || mobileOpen
+                ? item.badge > 99
+                  ? "99+"
+                  : item.badge
+                : ""}
             </span>
           )}
         </div>
@@ -601,13 +615,17 @@ export default function Sidebar({
 
   // Bổ sung user vào dependency array của useMemo để Sidebar tự động tính toán lại quyền khi token/user thay đổi
   const filteredTopNavItems = useMemo(() => {
-    return topNavItems.filter((item) => {
-      if (!item.resourceSlug) return true;
+    return topNavItems
+      .filter((item) => {
+        if (!item.resourceSlug) return true;
 
-      if (user?.role?.slug === "SUPER_ADMIN") return true;
-      return canAccessResource(item.resourceSlug);
-    });
-  }, [canAccessResource, user]);
+        if (user?.role?.slug === "SUPER_ADMIN") return true;
+        return canAccessResource(item.resourceSlug);
+      })
+      .map((item) =>
+        item.id === "notifications" ? { ...item, badge: unreadCount } : item,
+      );
+  }, [canAccessResource, user, unreadCount]);
 
   const filteredDeptGroups = useMemo(() => {
     return deptGroups

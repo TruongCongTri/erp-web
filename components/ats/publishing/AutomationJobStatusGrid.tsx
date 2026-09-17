@@ -22,6 +22,7 @@ import {
   useGetAutomationJobsQuery,
   useRetryAutomationJobMutation,
 } from "@/lib/store/publishingAutomationApiSlice";
+import { AUTOMATION_CHANNELS_ENABLED } from "@/components/ats/publishing/AutomationChannelsPanel";
 
 const AUTOMATION_RETRY_PERMISSIONS = [
   "publishing_automation:update:any",
@@ -157,7 +158,7 @@ function AutomationJobRow({
           className="text-[11px] h-7 px-2.5 inline-flex items-center gap-1"
           allowedPermissions={AUTOMATION_RETRY_PERMISSIONS}
           permissionBehavior="disable"
-          disabled={isBusy}
+          disabled={isBusy || !AUTOMATION_CHANNELS_ENABLED}
           isLoading={isBusy}
           onAction={() => onRetry(job.id)}
           loadingMessage="Đang gửi lại yêu cầu đăng bài..."
@@ -168,9 +169,11 @@ function AutomationJobRow({
             "Gửi lại thất bại."
           }
           tooltip={
-            job.status === AutomationJobStatus.CHECKPOINT_BLOCKED
-              ? "Ops cần xác thực lại tài khoản Facebook trước — thử lại có thể vẫn thất bại cho tới khi đó."
-              : undefined
+            !AUTOMATION_CHANNELS_ENABLED
+              ? "Tính năng đang phát triển"
+              : job.status === AutomationJobStatus.CHECKPOINT_BLOCKED
+                ? "Ops cần xác thực lại tài khoản Facebook trước — thử lại có thể vẫn thất bại cho tới khi đó."
+                : undefined
           }
         >
           <RotateCcw size={11} /> Thử lại

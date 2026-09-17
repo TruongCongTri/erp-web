@@ -123,6 +123,55 @@ export interface CursorPaginationResponse<T> {
   };
   message: string;
 }
+// ==========================================
+// OPTIMISTIC CACHE HELPER
+// ==========================================
+// Mọi endpoint list đều giữ một bản sao của notification, nên khi đánh dấu đã đọc
+// phải vá TẤT CẢ cache đang sống (chuông Topbar + badge Sidebar dùng
+// `getNotifications`, trang Thông báo dùng `getNotificationsList`,
+// feed cuộn vô hạn dùng `getNotificationsPage`) — nếu không, badge sẽ không đổi.
+const PATCHABLE_ENDPOINTS = [
+  "getNotifications",
+  "getNotificationsList",
+  "getNotificationsPage",
+] as const;
+
+function patchNotificationCaches(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  dispatch: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getState: any,
+  mutate: (draft: { data?: AppNotification[] }) => void,
+) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const queries = (getState() as any).notificationsApi?.queries ?? {};
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const patches: any[] = [];
+
+  for (const key of Object.keys(queries)) {
+    // Cache key có dạng `endpointName(args)` hoặc `endpointName-args`
+    // (getNotificationsPage tự custom `serializeQueryArgs`).
+    const endpoint = PATCHABLE_ENDPOINTS.find(
+      (name) => key.startsWith(name) && !/[A-Za-z]/.test(key.charAt(name.length)),
+    );
+    if (!endpoint) continue;
+
+    patches.push(
+      dispatch(
+        notificationsApiSlice.util.updateQueryData(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          endpoint as any,
+          queries[key].originalArgs,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          mutate as any,
+        ),
+      ),
+    );
+  }
+
+  return patches;
+}
+
 export const notificationsApiSlice = createApi({
   reducerPath: "notificationsApi",
   baseQuery: baseQuery,
@@ -373,30 +422,14 @@ export const notificationsApiSlice = createApi({
         method: "PATCH",
       }),
       // Optimistic Update
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       async onQueryStarted(id, { dispatch, queryFulfilled, getState }) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const state = getState() as any;
-        const queries = state.notificationsApi.queries;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const patches: any[] = [];
-
-        for (const key of Object.keys(queries)) {
-          if (key.startsWith("getNotificationsList")) {
-            patches.push(
-              dispatch(
-                notificationsApiSlice.util.updateQueryData(
-                  "getNotificationsList",
-                  queries[key].originalArgs,
-                  (draft) => {
-                    const notif = draft.data?.find((n) => n.id === id);
-                    if (notif) notif.isRead = true;
-                  },
-                ),
-              ),
-            );
+        const patches = patchNotificationCaches(dispatch, getState, (draft) => {
+          const notif = draft.data?.find((n) => n.id === id);
+          if (notif && !notif.isRead) {
+            notif.isRead = true;
+            notif.readAt = new Date().toISOString();
           }
-        }
+        });
 
         try {
           await queryFulfilled;
@@ -414,31 +447,16 @@ export const notificationsApiSlice = createApi({
         url: "/notifications/read-all",
         method: "PATCH",
       }),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       async onQueryStarted(arg, { dispatch, queryFulfilled, getState }) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const state = getState() as any;
-        const queries = state.notificationsApi.queries;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const patches: any[] = [];
-
-        for (const key of Object.keys(queries)) {
-          if (key.startsWith("getNotificationsList")) {
-            patches.push(
-              dispatch(
-                notificationsApiSlice.util.updateQueryData(
-                  "getNotificationsList",
-                  queries[key].originalArgs,
-                  (draft) => {
-                    draft.data?.forEach((notif) => {
-                      notif.isRead = true;
-                    });
-                  },
-                ),
-              ),
-            );
-          }
-        }
+        const readAt = new Date().toISOString();
+        const patches = patchNotificationCaches(dispatch, getState, (draft) => {
+          draft.data?.forEach((notif) => {
+            if (!notif.isRead) {
+              notif.isRead = true;
+              notif.readAt = readAt;
+            }
+          });
+        });
 
         try {
           await queryFulfilled;

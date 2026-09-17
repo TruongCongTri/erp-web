@@ -88,98 +88,150 @@ import AutomationChannelsPanel, {
 type SectionKey = "general" | "description" | "expectations" | "contact";
 type CreationMode = "choose" | "ai_flat" | "template_flat" | "editor";
 
-const DEFAULT_DEADLINE = new Date(Date.now() + 30 * 86400000)
-  .toISOString()
-  .split("T")[0];
+// JD form fields are never pre-filled with sample content: an empty field means
+// the user (or the AI/template) has not supplied a value yet, and it is saved as
+// empty rather than silently substituted with a placeholder.
+type JdFormData = {
+  publicTitle: string;
+  specialization: string;
+  domainKnowledge: string;
+  level: JobLevel | "";
+  jobType: JobType | "";
+  workingModel: WorkingModel | "";
+  salaryMin: number | "";
+  salaryMax: number | "";
+  isSalaryNegotiable: boolean;
+  jobDescription: string;
+  requirements: string;
+  benefits: string;
+  extraBenefits: string;
+  workLocations: { label: string; address: string }[];
+  workingHoursStandard: string;
+  workingHoursDetail: string;
+  minEducation: EducationLevel | "";
+  experienceYears: number | "";
+  gender: CandidateGender | "";
+  ageMin: number | "";
+  ageMax: number | "";
+  mustHaveSkills: string[];
+  niceToHaveSkills: string[];
+  languages: string[];
+  applicationDeadline: string;
+  headcount: number | "";
+  hrRecipientName: string;
+  hrRecipientPhone: string;
+  hrRecipientEmail: string;
+  campaignName: string;
+};
 
-const getInitialFormData = (jobPost: JobPost | null | undefined) => {
-  if (jobPost) {
-    return {
-      publicTitle: jobPost.publicTitle || "",
-      specialization: jobPost.specialization || "Kỹ thuật Xây dựng / EPC",
-      domainKnowledge: jobPost.domainKnowledge || "Dân dụng & Công nghiệp",
-      level: jobPost.level || JobLevel.SENIOR,
-      jobType: jobPost.jobType || JobType.FULL_TIME,
-      workingModel: jobPost.workingModel || WorkingModel.ON_SITE,
-      salaryMin: jobPost.salaryMin ?? 15000000,
-      salaryMax: jobPost.salaryMax ?? 25000000,
-      isSalaryNegotiable: jobPost.isSalaryNegotiable ?? false,
-      jobDescription: jobPost.jobDescription || "",
-      requirements: jobPost.requirements || "",
-      benefits: jobPost.benefits || "",
-      extraBenefits: jobPost.extraBenefits || "",
-      workLocations: jobPost.workLocations || [
-        {
-          label: "Trụ sở chính",
-          address:
-            "255/56T Nguyễn Văn Tiên, khu phố 11A, phường Tân Triều, TP. Đồng Nai",
-        },
-      ],
-      workingHoursStandard:
-        jobPost.workingHoursStandard || "Thứ 2 – Thứ 6: 07:30 – 17:00",
-      workingHoursDetail:
-        jobPost.workingHoursDetail ||
-        "Nghỉ trưa 11h30 – 13h00; Thứ 7: 07:30 - 11:30",
-      minEducation: jobPost.minEducation || EducationLevel.BACHELOR,
-      experienceYears: jobPost.experienceYears ?? 3,
-      gender: jobPost.gender || CandidateGender.ANY,
-      ageMin: jobPost.ageMin ?? 24,
-      ageMax: jobPost.ageMax ?? 35,
-      mustHaveSkills: jobPost.mustHaveSkills || ["Revit", "AutoCAD", "BIM 360"],
-      niceToHaveSkills: jobPost.niceToHaveSkills || [
-        "Tiếng Anh giao tiếp",
-        "Navisworks",
-      ],
-      languages: jobPost.languages || ["Tiếng Việt", "Tiếng Anh"],
-      applicationDeadline: jobPost.applicationDeadline
-        ? new Date(jobPost.applicationDeadline).toISOString().split("T")[0]
-        : DEFAULT_DEADLINE,
-      headcount: jobPost.headcount ?? 1,
-      hrRecipientName: jobPost.hrRecipientName || "TD Chính Nam",
-      hrRecipientPhone: jobPost.hrRecipientPhone || "0937546739",
-      hrRecipientEmail: jobPost.hrRecipientEmail || "talent@chinhnambkd.vn",
-      campaignName:
-        jobPost.campaignName || "Chiến dịch tuyển dụng Kỹ sư EPC 2026",
-    };
-  }
+const EMPTY_FORM_DATA: JdFormData = {
+  publicTitle: "",
+  specialization: "",
+  domainKnowledge: "",
+  level: "",
+  jobType: "",
+  workingModel: "",
+  salaryMin: "",
+  salaryMax: "",
+  isSalaryNegotiable: false,
+  jobDescription: "",
+  requirements: "",
+  benefits: "",
+  extraBenefits: "",
+  workLocations: [],
+  workingHoursStandard: "",
+  workingHoursDetail: "",
+  minEducation: "",
+  experienceYears: "",
+  gender: "",
+  ageMin: "",
+  ageMax: "",
+  mustHaveSkills: [],
+  niceToHaveSkills: [],
+  languages: [],
+  applicationDeadline: "",
+  headcount: "",
+  hrRecipientName: "",
+  hrRecipientPhone: "",
+  hrRecipientEmail: "",
+  campaignName: "",
+};
+
+// Standing company defaults for the "Thông tin nhận hồ sơ" section only: these
+// are fixed company contact details, so an empty field falls back to them
+// instead of being left blank. The deadline defaults to 2 weeks from creation.
+const APPLICATION_DEADLINE_DEFAULT_DAYS = 14;
+const DEFAULT_HR_RECIPIENT = {
+  name: "TD Chính Nam",
+  phone: "0937546739",
+  email: "talent@chinhnambkd.vn",
+};
+
+const resolveApplicationDeadline = (value: string) =>
+  value
+    ? new Date(value)
+    : new Date(Date.now() + APPLICATION_DEADLINE_DEFAULT_DAYS * 86400000);
+
+const resolveRecipientInfo = (data: JdFormData) => ({
+  hrRecipientName: data.hrRecipientName?.trim() || DEFAULT_HR_RECIPIENT.name,
+  hrRecipientPhone: data.hrRecipientPhone?.trim() || DEFAULT_HR_RECIPIENT.phone,
+  hrRecipientEmail: data.hrRecipientEmail?.trim() || DEFAULT_HR_RECIPIENT.email,
+});
+
+// Display helpers: an unset field renders as "—" instead of blank or invented text.
+const orDash = (value: string | number | "" | null | undefined) =>
+  value === "" || value === null || value === undefined ? "—" : String(value);
+
+// Clearing a numeric input keeps it empty instead of collapsing to 0.
+const parseNumberInput = (value: string): number | "" =>
+  value === "" ? "" : Number(value);
+
+const formatSalaryText = (data: JdFormData) => {
+  if (data.isSalaryNegotiable) return "Thỏa thuận";
+  if (data.salaryMin === "" && data.salaryMax === "") return "—";
+  const toMillions = (v: number | "") =>
+    v === "" ? "—" : (Number(v) / 1000000).toFixed(0);
+  return `${toMillions(data.salaryMin)} - ${toMillions(data.salaryMax)} triệu VNĐ`;
+};
+
+const getInitialFormData = (
+  jobPost: JobPost | null | undefined,
+): JdFormData => {
+  if (!jobPost) return { ...EMPTY_FORM_DATA };
 
   return {
-    publicTitle: "",
-    specialization: "Kỹ thuật Xây dựng / EPC",
-    domainKnowledge: "Dân dụng & Công nghiệp",
-    level: JobLevel.SENIOR,
-    jobType: JobType.FULL_TIME,
-    workingModel: WorkingModel.ON_SITE,
-    salaryMin: 15000000,
-    salaryMax: 25000000,
-    isSalaryNegotiable: false,
-    jobDescription: "",
-    requirements: "",
-    benefits: "",
-    extraBenefits: "",
-    workLocations: [
-      {
-        label: "Trụ sở chính",
-        address:
-          "255/56T Nguyễn Văn Tiên, khu phố 11A, phường Tân Triều, TP. Đồng Nai",
-      },
-    ],
-    workingHoursStandard: "Thứ 2 – Thứ 6: 07:30 – 17:00",
-    workingHoursDetail: "Nghỉ trưa 11h30 – 13h00; Thứ 7: 07:30 - 11:30",
-    minEducation: EducationLevel.BACHELOR,
-    experienceYears: 3,
-    gender: CandidateGender.ANY,
-    ageMin: 24,
-    ageMax: 35,
-    mustHaveSkills: ["Revit", "AutoCAD", "BIM 360"],
-    niceToHaveSkills: ["Tiếng Anh giao tiếp", "Navisworks"],
-    languages: ["Tiếng Việt", "Tiếng Anh"],
-    applicationDeadline: DEFAULT_DEADLINE,
-    headcount: 1,
-    hrRecipientName: "TD Chính Nam",
-    hrRecipientPhone: "0937546739",
-    hrRecipientEmail: "talent@chinhnambkd.vn",
-    campaignName: "Chiến dịch tuyển dụng Kỹ sư EPC 2026",
+    publicTitle: jobPost.publicTitle || "",
+    specialization: jobPost.specialization || "",
+    domainKnowledge: jobPost.domainKnowledge || "",
+    level: jobPost.level || "",
+    jobType: jobPost.jobType || "",
+    workingModel: jobPost.workingModel || "",
+    salaryMin: jobPost.salaryMin ?? "",
+    salaryMax: jobPost.salaryMax ?? "",
+    isSalaryNegotiable: jobPost.isSalaryNegotiable ?? false,
+    jobDescription: jobPost.jobDescription || "",
+    requirements: jobPost.requirements || "",
+    benefits: jobPost.benefits || "",
+    extraBenefits: jobPost.extraBenefits || "",
+    workLocations: jobPost.workLocations || [],
+    workingHoursStandard: jobPost.workingHoursStandard || "",
+    workingHoursDetail: jobPost.workingHoursDetail || "",
+    minEducation: jobPost.minEducation || "",
+    experienceYears: jobPost.experienceYears ?? "",
+    gender: jobPost.gender || "",
+    ageMin: jobPost.ageMin ?? "",
+    ageMax: jobPost.ageMax ?? "",
+    mustHaveSkills: jobPost.mustHaveSkills || [],
+    niceToHaveSkills: jobPost.niceToHaveSkills || [],
+    languages: jobPost.languages || [],
+    applicationDeadline: jobPost.applicationDeadline
+      ? new Date(jobPost.applicationDeadline).toISOString().split("T")[0]
+      : "",
+    headcount: jobPost.headcount ?? "",
+    hrRecipientName: jobPost.hrRecipientName || "",
+    hrRecipientPhone: jobPost.hrRecipientPhone || "",
+    hrRecipientEmail: jobPost.hrRecipientEmail || "",
+    campaignName: jobPost.campaignName || "",
   };
 };
 
@@ -298,7 +350,7 @@ function RecruitmentRequestDetailInner({
     () =>
       jobPost?.targetPlatforms?.length
         ? jobPost.targetPlatforms
-        : [PlatformSource.LINKEDIN],
+        : [PlatformSource.COMPANY_WEBSITE],
   );
   const [scheduleMode, setScheduleMode] = useState<"immediate" | "scheduled">(
     "immediate",
@@ -376,80 +428,59 @@ function RecruitmentRequestDetailInner({
     }
   }, [jobPost?.id]);
 
-  const buildJobPostPayload = (data: typeof formData) => {
-    const formattedLocations = (
-      data.workLocations && data.workLocations.length > 0
-        ? data.workLocations
-        : [
-            {
-              label: "Trụ sở chính",
-              address:
-                "255/56T Nguyễn Văn Tiên, khu phố 11A, phường Tân Triều, TP. Đồng Nai",
-            },
-          ]
-    ).map((loc: any) => {
-      if (typeof loc === "string")
-        return { label: "Địa điểm", address: loc.trim() };
-      return {
-        label: loc.label?.trim() || "Trụ sở",
-        address:
-          loc.address?.trim() ||
-          "255/56T Nguyễn Văn Tiên, khu phố 11A, phường Tân Triều, TP. Đồng Nai",
-      };
-    });
+  const buildJobPostPayload = (data: JdFormData) => {
+    const formattedLocations = (data.workLocations || [])
+      .map((loc: any) => {
+        if (typeof loc === "string")
+          return { label: "Địa điểm", address: loc.trim() };
+        return {
+          label: loc.label?.trim() || "",
+          address: loc.address?.trim() || "",
+        };
+      })
+      .filter((loc) => loc.label || loc.address);
 
+    const optionalNumber = (value: number | "") =>
+      value === "" || Number.isNaN(Number(value))
+        ? undefined
+        : Math.round(Number(value));
+
+    // Empty fields are sent as undefined and stripped below, so a value the
+    // user never filled in is never persisted as invented content.
     const payload: any = {
       creationMethod: JobPostCreationMethod.MANUAL,
-      publicTitle:
-        data.publicTitle?.trim() ||
-        rawNote.split("\n")[0] ||
-        "Bản thảo tin tuyển dụng",
-      specialization: data.specialization?.trim() || "Kỹ thuật Xây dựng / EPC",
-      domainKnowledge: data.domainKnowledge?.trim() || "Dân dụng & Công nghiệp",
-      level: data.level || JobLevel.SENIOR,
-      jobType: data.jobType || JobType.FULL_TIME,
-      workingModel: data.workingModel || WorkingModel.ON_SITE,
-      salaryMin: data.isSalaryNegotiable
-        ? 0
-        : Math.round(Number(data.salaryMin) || 0),
-      salaryMax: data.isSalaryNegotiable
-        ? 0
-        : Math.round(Number(data.salaryMax) || 0),
+      publicTitle: data.publicTitle?.trim() || undefined,
+      specialization: data.specialization?.trim() || undefined,
+      domainKnowledge: data.domainKnowledge?.trim() || undefined,
+      level: data.level || undefined,
+      jobType: data.jobType || undefined,
+      workingModel: data.workingModel || undefined,
+      salaryMin: data.isSalaryNegotiable ? 0 : optionalNumber(data.salaryMin),
+      salaryMax: data.isSalaryNegotiable ? 0 : optionalNumber(data.salaryMax),
       isSalaryNegotiable: Boolean(data.isSalaryNegotiable),
-      jobDescription:
-        data.jobDescription?.trim() || "Mô tả công việc đang soạn thảo...",
-      requirements:
-        data.requirements?.trim() || "Yêu cầu ứng viên đang soạn thảo...",
-      benefits:
-        data.benefits?.trim() || "Quyền lợi và chế độ đãi ngộ đang cập nhật...",
+      jobDescription: data.jobDescription?.trim() || undefined,
+      requirements: data.requirements?.trim() || undefined,
+      benefits: data.benefits?.trim() || undefined,
       extraBenefits: data.extraBenefits?.trim() || undefined,
-      workLocations: formattedLocations,
-      workingHoursStandard:
-        data.workingHoursStandard?.trim() || "Thứ 2 – Thứ 6: 08:00 – 17:00",
-      workingHoursDetail:
-        data.workingHoursDetail?.trim() || "Nghỉ trưa 11h30 – 13h00",
-      minEducation: data.minEducation || EducationLevel.BACHELOR,
-      experienceYears: Math.round(Number(data.experienceYears) || 0),
-      gender: data.gender || CandidateGender.ANY,
-      ageMin: data.ageMin ? Math.round(Number(data.ageMin)) : undefined,
-      ageMax: data.ageMax ? Math.round(Number(data.ageMax)) : undefined,
+      workLocations: formattedLocations.length ? formattedLocations : undefined,
+      workingHoursStandard: data.workingHoursStandard?.trim() || undefined,
+      workingHoursDetail: data.workingHoursDetail?.trim() || undefined,
+      minEducation: data.minEducation || undefined,
+      experienceYears: optionalNumber(data.experienceYears),
+      gender: data.gender || undefined,
+      ageMin: optionalNumber(data.ageMin),
+      ageMax: optionalNumber(data.ageMax),
       mustHaveSkills: data.mustHaveSkills || [],
       niceToHaveSkills: data.niceToHaveSkills || [],
       languages: data.languages || [],
-      applicationDeadline: data.applicationDeadline
-        ? new Date(data.applicationDeadline).toISOString()
-        : new Date(Date.now() + 30 * 86400000).toISOString(),
-      headcount: Math.max(1, Math.round(Number(data.headcount) || 1)),
-      hrRecipientName: data.hrRecipientName?.trim() || "TD Chính Nam",
-      hrRecipientPhone: data.hrRecipientPhone?.trim() || "0937546739",
-      hrRecipientEmail:
-        data.hrRecipientEmail?.trim() && data.hrRecipientEmail.includes("@")
-          ? data.hrRecipientEmail.trim()
-          : "talent@chinhnambkd.vn",
+      // "Thông tin nhận hồ sơ" is the one section with standing defaults.
+      applicationDeadline: resolveApplicationDeadline(
+        data.applicationDeadline,
+      ).toISOString(),
+      headcount: optionalNumber(data.headcount),
+      ...resolveRecipientInfo(data),
       campaignName: data.campaignName?.trim() || undefined,
-      targetPlatforms: selectedChannels?.length
-        ? selectedChannels
-        : [PlatformSource.LINKEDIN],
+      targetPlatforms: selectedChannels?.length ? selectedChannels : undefined,
     };
 
     Object.keys(payload).forEach((key) => {
@@ -535,47 +566,48 @@ function RecruitmentRequestDetailInner({
   }, [formData, creationMode, isFormDisabled, canManageJd]);
 
   const generateMarkdownContent = () => {
-    const salaryText = formData.isSalaryNegotiable
-      ? "Thỏa thuận"
-      : `${(formData.salaryMin / 1000000).toFixed(0)} - ${(formData.salaryMax / 1000000).toFixed(0)} triệu VNĐ`;
+    const salaryText = formatSalaryText(formData);
+    const recipient = resolveRecipientInfo(formData);
+    const deadline = resolveApplicationDeadline(formData.applicationDeadline);
 
-    const locationsStr = formData.workLocations
-      .map((l) => `${l.label}: ${l.address}`)
-      .join(" | ");
+    const locationsStr =
+      formData.workLocations
+        .map((l) => `${l.label}: ${l.address}`)
+        .join(" | ") || "—";
 
     return `# 📢 THÔNG BÁO TUYỂN DỤNG: ${formData.publicTitle.toUpperCase()}
 **Mã tin:** ${jobPost?.jobCode || req?.requestCode || "ATS-JOB"}
 **Đơn vị:** Công ty Cổ phần Thiết kế Xây dựng Chính Nam
 **Bộ phận:** ${deptName}
 **Mức lương:** ${salaryText}
-**Cấp bậc:** ${formData.level} (Kinh nghiệm: ${formData.experienceYears} năm)
-**Hình thức làm việc:** ${formData.jobType} (${formData.workingModel})
+**Cấp bậc:** ${orDash(formData.level)} (Kinh nghiệm: ${orDash(formData.experienceYears)} năm)
+**Hình thức làm việc:** ${orDash(formData.jobType)} (${orDash(formData.workingModel)})
 **Địa điểm:** ${locationsStr}
-**Thời gian làm việc:** ${formData.workingHoursStandard} (${formData.workingHoursDetail})
+**Thời gian làm việc:** ${orDash(formData.workingHoursStandard)} (${orDash(formData.workingHoursDetail)})
 
 ---
 
 ### 1. MÔ TẢ CÔNG VIỆC
-${formData.jobDescription}
+${orDash(formData.jobDescription)}
 
 ### 2. YÊU CẦU ỨNG VIÊN
-${formData.requirements}
-* Học vấn: ${formData.minEducation}
-* Kỹ năng cốt lõi (Must-Have): ${formData.mustHaveSkills.join(", ")}
-* Kỹ năng ưu tiên (Nice-to-Have): ${formData.niceToHaveSkills.join(", ")}
-* Ngoại ngữ: ${formData.languages.join(", ")}
+${orDash(formData.requirements)}
+* Học vấn: ${orDash(formData.minEducation)}
+* Kỹ năng cốt lõi (Must-Have): ${formData.mustHaveSkills.join(", ") || "—"}
+* Kỹ năng ưu tiên (Nice-to-Have): ${formData.niceToHaveSkills.join(", ") || "—"}
+* Ngoại ngữ: ${formData.languages.join(", ") || "—"}
 
 ### 3. QUYỀN LỢI & ĐÃI NGỘ
-${formData.benefits}
+${orDash(formData.benefits)}
 ${formData.extraBenefits ? `* Chế độ bổ sung: ${formData.extraBenefits}` : ""}
 
 ---
 
 ### 4. CÁCH THỨC ỨNG TUYỂN
-* Hạn nộp hồ sơ: ${formData.applicationDeadline ? new Date(formData.applicationDeadline).toLocaleDateString("vi-VN") : "—"}
-* Đầu mối nhận hồ sơ: ${formData.hrRecipientName}
-* Số điện thoại liên hệ: ${formData.hrRecipientPhone}
-* Email nhận hồ sơ: ${formData.hrRecipientEmail}
+* Hạn nộp hồ sơ: ${deadline.toLocaleDateString("vi-VN")}
+* Đầu mối nhận hồ sơ: ${recipient.hrRecipientName}
+* Số điện thoại liên hệ: ${recipient.hrRecipientPhone}
+* Email nhận hồ sơ: ${recipient.hrRecipientEmail}
 
 *Ứng viên quan tâm vui lòng gửi CV theo tiêu đề: [Họ tên] - [Vị trí ứng tuyển] về email trên.*`;
   };
@@ -593,6 +625,8 @@ ${formData.extraBenefits ? `* Chế độ bổ sung: ${formData.extraBenefits}` 
   };
 
   const trackerSections = useMemo(() => {
+    const resolvedRecipient = resolveRecipientInfo(formData);
+
     return [
       {
         key: "general" as SectionKey,
@@ -617,8 +651,8 @@ ${formData.extraBenefits ? `* Chế độ bổ sung: ${formData.extraBenefits}` 
             label: "Mức lương định biên",
             isCompleted:
               formData.isSalaryNegotiable ||
-              (formData.salaryMin > 0 &&
-                formData.salaryMax >= formData.salaryMin),
+              (Number(formData.salaryMin) > 0 &&
+                Number(formData.salaryMax) >= Number(formData.salaryMin)),
           },
         ],
       },
@@ -655,7 +689,7 @@ ${formData.extraBenefits ? `* Chế độ bổ sung: ${formData.extraBenefits}` 
           {
             label: "Học vấn & Kinh nghiệm",
             isCompleted: Boolean(
-              formData.minEducation && formData.experienceYears >= 0,
+              formData.minEducation && formData.experienceYears !== "",
             ),
           },
           {
@@ -677,25 +711,22 @@ ${formData.extraBenefits ? `* Chế độ bổ sung: ${formData.extraBenefits}` 
         num: 4,
         title: "4. Thông tin nhận hồ sơ",
         subItems: [
+          // This section always resolves to the company defaults when left
+          // blank, so completeness is judged on the resolved values.
           {
             label: "Hạn nộp & Số lượng",
-            isCompleted: Boolean(
-              formData.applicationDeadline && formData.headcount > 0,
-            ),
+            isCompleted: Number(formData.headcount) > 0,
           },
           {
             label: "Người nhận & SĐT",
             isCompleted: Boolean(
-              formData.hrRecipientName.trim() &&
-              formData.hrRecipientPhone.trim(),
+              resolvedRecipient.hrRecipientName &&
+                resolvedRecipient.hrRecipientPhone,
             ),
           },
           {
             label: "Email nhận hồ sơ",
-            isCompleted: Boolean(
-              formData.hrRecipientEmail.trim() &&
-              formData.hrRecipientEmail.includes("@"),
-            ),
+            isCompleted: resolvedRecipient.hrRecipientEmail.includes("@"),
           },
           {
             label: "Chiến dịch tuyển dụng",
@@ -749,7 +780,7 @@ ${formData.extraBenefits ? `* Chế độ bổ sung: ${formData.extraBenefits}` 
   const handleRunAiSuggestFlat = async () => {
     try {
       gooeyToast.info(
-        "Gemini AI đang tổng hợp và điền các trường tiêu chuẩn...",
+        "AI đang tổng hợp và điền các trường tiêu chuẩn...",
       );
       const res = await aiSuggestJd({
         rawPrompt: aiFlatPrompt,
@@ -759,8 +790,7 @@ ${formData.extraBenefits ? `* Chế độ bổ sung: ${formData.extraBenefits}` 
       const aiData = res.data;
       const newFormData = {
         ...formData,
-        publicTitle:
-          aiData.publicTitle || formData.publicTitle || "Kỹ sư Kết cấu",
+        publicTitle: aiData.publicTitle || formData.publicTitle,
         specialization: aiData.specialization || formData.specialization,
         domainKnowledge: aiData.domainKnowledge || formData.domainKnowledge,
         level: aiData.level || formData.level,
@@ -998,7 +1028,7 @@ ${formData.extraBenefits ? `* Chế độ bổ sung: ${formData.extraBenefits}` 
       !scheduledPublishAt
     ) {
       throw {
-        message: "Vui lòng chọn ngày giờ lên lịch đăng bài cho LinkedIn/Facebook Page.",
+        message: "Vui lòng chọn ngày giờ lên lịch đăng bài.",
       };
     }
 
@@ -1023,7 +1053,7 @@ ${formData.extraBenefits ? `* Chế độ bổ sung: ${formData.extraBenefits}` 
         const errorMsg = err?.data?.message;
         const displayMsg = Array.isArray(errorMsg)
           ? errorMsg.join(", ")
-          : errorMsg || "Lỗi xuất bản LinkedIn/Facebook Page.";
+          : errorMsg || "Lỗi xuất bản.";
         failures.push(displayMsg);
       }
     }
@@ -1097,9 +1127,7 @@ ${formData.extraBenefits ? `* Chế độ bổ sung: ${formData.extraBenefits}` 
     rawNote.split("\n")[0] ||
     `Yêu cầu tuyển dụng [${requestCode}]`;
 
-  const salaryDisplay = formData.isSalaryNegotiable
-    ? "Thỏa thuận"
-    : `${(formData.salaryMin / 1000000).toFixed(0)} - ${(formData.salaryMax / 1000000).toFixed(0)} triệu VNĐ`;
+  const salaryDisplay = formatSalaryText(formData);
 
   return (
     <HorizontalDetailLayout
@@ -1531,7 +1559,7 @@ ${formData.extraBenefits ? `* Chế độ bổ sung: ${formData.extraBenefits}` 
                     )}
                     <span>
                       {isAiGenerating
-                        ? "Gemini đang suy luận..."
+                        ? "AI đang suy luận..."
                         : "Tự động điền dữ liệu"}
                     </span>
                   </button>
@@ -1894,7 +1922,7 @@ ${formData.extraBenefits ? `* Chế độ bổ sung: ${formData.extraBenefits}` 
                       <Wand2 size={18} />
                     </div>
                     <span className="text-[10px] font-semibold text-purple-700 dark:text-purple-300 bg-purple-100/70 dark:bg-purple-900/50 px-2 py-0.5 rounded-md border border-purple-200 dark:border-purple-800">
-                      Gemini 3.6
+                      AI
                     </span>
                   </div>
 
@@ -2018,7 +2046,7 @@ ${formData.extraBenefits ? `* Chế độ bổ sung: ${formData.extraBenefits}` 
           )}
 
         {/* ==================================================================== */}
-        {/* GIAO DIỆN 4: GEMINI AI GỢI Ý CHO HR */}
+        {/* GIAO DIỆN 4: AI GỢI Ý CHO HR */}
         {/* ==================================================================== */}
         {!showPendingFillin && canManageJd && creationMode === "ai_flat" && (
           <div className="flex-1 flex flex-col justify-center max-w-3xl mx-auto w-full py-3 space-y-4 fade-in">
@@ -2029,10 +2057,10 @@ ${formData.extraBenefits ? `* Chế độ bổ sung: ${formData.extraBenefits}` 
                     <Sparkles size={14} />
                   </div>
                   <h3 className="text-sm font-bold text-foreground">
-                    Trợ lý Gemini AI soạn thảo JD
+                    Trợ lý AI soạn thảo JD
                   </h3>
                   <span className="text-[10px] font-semibold text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950/50 px-2 py-0.5 rounded border border-purple-200 dark:border-purple-800">
-                    Flash 3.6
+                    AI-Powered
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -2139,7 +2167,7 @@ ${formData.extraBenefits ? `* Chế độ bổ sung: ${formData.extraBenefits}` 
                         ? "Bản tin đang chờ bạn thẩm định và phê duyệt (Chế độ chỉ đọc)."
                         : "Bản tin đang trong tiến trình tuyển dụng (Chế độ chỉ đọc)."
                       : isAiGenerating
-                        ? "Gemini AI đang sinh dữ liệu và tự động điền form..."
+                        ? "AI đang sinh dữ liệu và tự động điền form..."
                         : isPendingApproval
                           ? "Bản tin đang chờ Trưởng ban phê duyệt."
                           : isApprovedOrReady
@@ -2432,7 +2460,7 @@ ${formData.extraBenefits ? `* Chế độ bổ sung: ${formData.extraBenefits}` 
                               onChange={(e) =>
                                 setFormData({
                                   ...formData,
-                                  salaryMin: Number(e.target.value),
+                                  salaryMin: parseNumberInput(e.target.value),
                                 })
                               }
                               className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm font-mono focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
@@ -2450,7 +2478,7 @@ ${formData.extraBenefits ? `* Chế độ bổ sung: ${formData.extraBenefits}` 
                               onChange={(e) =>
                                 setFormData({
                                   ...formData,
-                                  salaryMax: Number(e.target.value),
+                                  salaryMax: parseNumberInput(e.target.value),
                                 })
                               }
                               className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm font-mono focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
@@ -2726,7 +2754,9 @@ ${formData.extraBenefits ? `* Chế độ bổ sung: ${formData.extraBenefits}` 
                           onChange={(e) =>
                             setFormData({
                               ...formData,
-                              experienceYears: Number(e.target.value),
+                              experienceYears: parseNumberInput(
+                                e.target.value,
+                              ),
                             })
                           }
                           className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm font-mono disabled:cursor-not-allowed disabled:opacity-60"
@@ -2768,7 +2798,7 @@ ${formData.extraBenefits ? `* Chế độ bổ sung: ${formData.extraBenefits}` 
                           onChange={(e) =>
                             setFormData({
                               ...formData,
-                              ageMin: Number(e.target.value),
+                              ageMin: parseNumberInput(e.target.value),
                             })
                           }
                           className="flex h-9 w-28 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm font-mono disabled:cursor-not-allowed disabled:opacity-60"
@@ -2784,7 +2814,7 @@ ${formData.extraBenefits ? `* Chế độ bổ sung: ${formData.extraBenefits}` 
                           onChange={(e) =>
                             setFormData({
                               ...formData,
-                              ageMax: Number(e.target.value),
+                              ageMax: parseNumberInput(e.target.value),
                             })
                           }
                           className="flex h-9 w-28 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm font-mono disabled:cursor-not-allowed disabled:opacity-60"
@@ -3025,6 +3055,11 @@ ${formData.extraBenefits ? `* Chế độ bổ sung: ${formData.extraBenefits}` 
                           }
                           className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm font-mono disabled:cursor-not-allowed disabled:opacity-60"
                         />
+                        {!formData.applicationDeadline && (
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            Để trống: mặc định 2 tuần kể từ khi tạo tin.
+                          </p>
+                        )}
                       </div>
                       <div>
                         <label className="text-xs font-semibold text-foreground mb-1 block">
@@ -3038,7 +3073,7 @@ ${formData.extraBenefits ? `* Chế độ bổ sung: ${formData.extraBenefits}` 
                           onChange={(e) =>
                             setFormData({
                               ...formData,
-                              headcount: Number(e.target.value),
+                              headcount: parseNumberInput(e.target.value),
                             })
                           }
                           className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-sm font-mono disabled:cursor-not-allowed disabled:opacity-60"
@@ -3172,34 +3207,40 @@ ${formData.extraBenefits ? `* Chế độ bổ sung: ${formData.extraBenefits}` 
                   <button
                     type="button"
                     onClick={() => {
-                      if (selectedChannels.includes(PlatformSource.LINKEDIN)) {
+                      if (
+                        selectedChannels.includes(
+                          PlatformSource.COMPANY_WEBSITE,
+                        )
+                      ) {
                         setSelectedChannels(
                           selectedChannels.filter(
-                            (c) => c !== PlatformSource.LINKEDIN,
+                            (c) => c !== PlatformSource.COMPANY_WEBSITE,
                           ),
                         );
                       } else {
                         setSelectedChannels([
                           ...selectedChannels,
-                          PlatformSource.LINKEDIN,
+                          PlatformSource.COMPANY_WEBSITE,
                         ]);
                       }
                     }}
                     className={`w-full p-2.5 rounded-lg border cursor-pointer transition-all flex items-center justify-between gap-2 text-left ${
-                      selectedChannels.includes(PlatformSource.LINKEDIN)
+                      selectedChannels.includes(PlatformSource.COMPANY_WEBSITE)
                         ? "border-primary bg-primary/[0.03] shadow-xs"
                         : "border-border bg-card hover:border-border/80"
                     }`}
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-6 h-6 rounded-md bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0">
-                        in
+                      <div className="w-6 h-6 rounded-md bg-primary text-primary-foreground flex items-center justify-center shrink-0">
+                        <Globe size={12} />
                       </div>
                       <p className="text-[11px] font-bold text-foreground truncate">
-                        LinkedIn Page
+                        Website công ty
                       </p>
                     </div>
-                    {selectedChannels.includes(PlatformSource.LINKEDIN) ? (
+                    {selectedChannels.includes(
+                      PlatformSource.COMPANY_WEBSITE,
+                    ) ? (
                       <CheckSquare size={15} className="text-primary shrink-0" />
                     ) : (
                       <Square
@@ -3211,42 +3252,46 @@ ${formData.extraBenefits ? `* Chế độ bổ sung: ${formData.extraBenefits}` 
 
                   <button
                     type="button"
-                    onClick={() => {
-                      if (selectedChannels.includes(PlatformSource.FACEBOOK)) {
-                        setSelectedChannels(
-                          selectedChannels.filter(
-                            (c) => c !== PlatformSource.FACEBOOK,
-                          ),
-                        );
-                      } else {
-                        setSelectedChannels([
-                          ...selectedChannels,
-                          PlatformSource.FACEBOOK,
-                        ]);
-                      }
-                    }}
-                    className={`w-full p-2.5 rounded-lg border cursor-pointer transition-all flex items-center justify-between gap-2 text-left ${
-                      selectedChannels.includes(PlatformSource.FACEBOOK)
-                        ? "border-primary bg-primary/[0.03] shadow-xs"
-                        : "border-border bg-card hover:border-border/80"
-                    }`}
+                    disabled
+                    title="Tính năng đang phát triển"
+                    className="w-full p-2.5 rounded-lg border border-border bg-muted/30 opacity-60 cursor-not-allowed flex items-center justify-between gap-2 text-left"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-6 h-6 rounded-md bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0">
+                        in
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-bold text-foreground truncate">
+                          LinkedIn Page
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          Đang phát triển
+                        </p>
+                      </div>
+                    </div>
+                    <Lock size={13} className="text-muted-foreground shrink-0" />
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled
+                    title="Tính năng đang phát triển"
+                    className="w-full p-2.5 rounded-lg border border-border bg-muted/30 opacity-60 cursor-not-allowed flex items-center justify-between gap-2 text-left"
                   >
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="w-6 h-6 rounded-md bg-blue-500 text-white flex items-center justify-center font-bold text-[10px] shrink-0">
                         f
                       </div>
-                      <p className="text-[11px] font-bold text-foreground truncate">
-                        Facebook Page
-                      </p>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-bold text-foreground truncate">
+                          Facebook Page
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                          Đang phát triển
+                        </p>
+                      </div>
                     </div>
-                    {selectedChannels.includes(PlatformSource.FACEBOOK) ? (
-                      <CheckSquare size={15} className="text-primary shrink-0" />
-                    ) : (
-                      <Square
-                        size={15}
-                        className="text-muted-foreground/40 shrink-0"
-                      />
-                    )}
+                    <Lock size={13} className="text-muted-foreground shrink-0" />
                   </button>
                 </>
               }
@@ -3255,7 +3300,7 @@ ${formData.extraBenefits ? `* Chế độ bổ sung: ${formData.extraBenefits}` 
             {selectedChannels.length > 0 && (
               <div className="space-y-3 pt-3 border-t border-border">
                 <label className="text-xs font-semibold text-foreground block">
-                  Thời gian phát hành (LinkedIn &amp; Facebook Page):
+                  Thời gian phát hành:
                 </label>
 
                 <div className="grid grid-cols-2 gap-3">

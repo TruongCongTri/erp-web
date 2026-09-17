@@ -15,6 +15,7 @@ import {
   Home,
   CheckCheck,
   Briefcase,
+  ArrowRight,
 } from "lucide-react";
 
 import {
@@ -30,6 +31,11 @@ import {
   useMarkAsReadMutation,
 } from "@/lib/store/notificationsApiSlice";
 import { gooeyToast } from "@/components/ui/goey-toaster";
+import {
+  getLocaleFromPathname,
+  notificationDetailHref,
+  notificationsHref,
+} from "@/lib/notificationLinks";
 import { AuthUser } from "@/types/modelsver2";
 
 interface TopbarProps {
@@ -117,13 +123,33 @@ export default function Topbar({ onOpenMobileMenu, user }: TopbarProps) {
     undefined,
     { skip: !user }
   );
-  const [markAllAsRead] = useMarkAllAsReadMutation();
+  const [markAllAsRead, { isLoading: isMarkingAll }] =
+    useMarkAllAsReadMutation();
   const [markAsRead] = useMarkAsReadMutation();
 
   const notifications = notifRes?.data || [];
   const unreadCount = useMemo(() => {
     return notifications.filter((n) => !n.isRead).length;
   }, [notifications]);
+
+  const locale = getLocaleFromPathname(pathname);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+
+  // Bấm vào 1 thông báo: đánh dấu đã đọc rồi mở trang Thông báo với Drawer chi tiết
+  const handleOpenNotif = (id: string, isRead: boolean) => {
+    setIsNotifOpen(false);
+    if (!isRead) markAsRead(id);
+    router.push(notificationDetailHref(id, locale));
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await markAllAsRead().unwrap();
+      gooeyToast.success("Đã đánh dấu tất cả thông báo là đã xem");
+    } catch {
+      gooeyToast.error("Không thể đánh dấu đã xem tất cả");
+    }
+  };
 
   const [entityNames, setEntityNames] = useState<Record<string, string>>({});
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -349,7 +375,7 @@ export default function Topbar({ onOpenMobileMenu, user }: TopbarProps) {
         </Popover>
 
         {/* Notifications Popover */}
-        <Popover>
+        <Popover open={isNotifOpen} onOpenChange={setIsNotifOpen}>
           <PopoverTrigger asChild>
             <button
               type="button"
@@ -373,10 +399,11 @@ export default function Topbar({ onOpenMobileMenu, user }: TopbarProps) {
               {unreadCount > 0 && (
                 <button
                   type="button"
-                  onClick={() => markAllAsRead()}
-                  className="text-xs text-primary font-medium cursor-pointer hover:underline flex items-center gap-1 bg-transparent border-0"
+                  onClick={handleMarkAllAsRead}
+                  className="text-xs text-primary font-medium cursor-pointer hover:underline flex items-center gap-1 bg-transparent border-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isMarkingAll}
                 >
-                  <CheckCheck size={12} /> Đánh dấu đã đọc
+                  <CheckCheck size={12} /> Đánh dấu đã xem tất cả
                 </button>
               )}
             </div>
@@ -391,13 +418,14 @@ export default function Topbar({ onOpenMobileMenu, user }: TopbarProps) {
                 </p>
               ) : (
                 notifications.map((n) => (
-                  <div
+                  <button
+                    type="button"
                     key={n.id}
-                    onClick={() => !n.isRead && markAsRead(n.id)}
-                    className={`p-3 rounded-lg text-left transition-colors ${
+                    onClick={() => handleOpenNotif(n.id, n.isRead)}
+                    className={`w-full p-3 rounded-lg text-left transition-colors cursor-pointer border-0 ${
                       n.isRead
-                        ? "opacity-60 hover:bg-muted/50"
-                        : "bg-primary/5 cursor-pointer hover:bg-primary/10"
+                        ? "opacity-60 bg-transparent hover:bg-muted/50"
+                        : "bg-primary/5 hover:bg-primary/10"
                     }`}
                   >
                     <div className="flex gap-2">
@@ -418,9 +446,21 @@ export default function Topbar({ onOpenMobileMenu, user }: TopbarProps) {
                         </p>
                       </div>
                     </div>
-                  </div>
+                  </button>
                 ))
               )}
+            </div>
+
+            {/* Link xuống trang Thông báo đầy đủ */}
+            <div className="border-t border-border bg-muted/20 rounded-b-lg">
+              <Link
+                href={notificationsHref(locale)}
+                onClick={() => setIsNotifOpen(false)}
+                className="flex items-center justify-center gap-1.5 px-4 py-2.5 text-xs font-medium text-primary hover:underline"
+              >
+                Xem tất cả thông báo
+                <ArrowRight size={13} />
+              </Link>
             </div>
           </PopoverContent>
         </Popover>

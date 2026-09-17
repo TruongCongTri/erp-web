@@ -20,6 +20,7 @@ import {
   ChevronRight,
   Sparkles,
   RefreshCw,
+  Lock,
 } from "lucide-react";
 
 import { gooeyToast } from "@/components/ui/goey-toaster";
@@ -91,6 +92,13 @@ const JOB_BOARDS_CONFIG: Record<
     storageKey: "publishingAutomation.targetDestination.CAREERVIET",
   },
 };
+
+/**
+ * Temporary rollout flag: only "Publish to Company Website" is live right
+ * now. Flip this back to true to re-enable Facebook Groups / TopCV /
+ * CareerViet channel selection once the automation module is ready.
+ */
+export const AUTOMATION_CHANNELS_ENABLED = false;
 
 type RailKey = "fbGroups" | "jobBoards";
 
@@ -188,6 +196,7 @@ const AutomationChannelsPanel = forwardRef<
   };
 
   useEffect(() => {
+    if (!AUTOMATION_CHANNELS_ENABLED) return;
     fetchRecommendations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -311,8 +320,9 @@ const AutomationChannelsPanel = forwardRef<
   const jobBoardsSelectedCount = visibleJobBoardPlatforms.filter(
     (p) => jobBoards[p]?.enabled,
   ).length;
-  const selectionCount =
-    (selectedGroups.length > 0 ? 1 : 0) + jobBoardsSelectedCount;
+  const selectionCount = AUTOMATION_CHANNELS_ENABLED
+    ? (selectedGroups.length > 0 ? 1 : 0) + jobBoardsSelectedCount
+    : 0;
 
   useEffect(() => {
     onSelectionCountChange?.(selectionCount);
@@ -328,6 +338,7 @@ const AutomationChannelsPanel = forwardRef<
   useImperativeHandle(ref, () => ({
     getSelectionCount: () => selectionCount,
     submit: async () => {
+      if (!AUTOMATION_CHANNELS_ENABLED) return [];
       const results: SubmitResult[] = [];
 
       if (selectedGroups.length > 0) {
@@ -401,13 +412,21 @@ const AutomationChannelsPanel = forwardRef<
 
         <button
           type="button"
+          disabled={!AUTOMATION_CHANNELS_ENABLED}
           onClick={() =>
             setActiveRail((prev) => (prev === "fbGroups" ? null : "fbGroups"))
           }
-          className={`w-full p-2.5 rounded-lg border cursor-pointer transition-all flex items-center justify-between gap-2 text-left ${
-            activeRail === "fbGroups"
-              ? "border-primary bg-primary/[0.03] shadow-xs"
-              : "border-border bg-card hover:border-border/80"
+          title={
+            AUTOMATION_CHANNELS_ENABLED
+              ? undefined
+              : "Tính năng đang phát triển"
+          }
+          className={`w-full p-2.5 rounded-lg border transition-all flex items-center justify-between gap-2 text-left ${
+            !AUTOMATION_CHANNELS_ENABLED
+              ? "border-border bg-muted/30 opacity-60 cursor-not-allowed"
+              : activeRail === "fbGroups"
+                ? "border-primary bg-primary/[0.03] shadow-xs cursor-pointer"
+                : "border-border bg-card hover:border-border/80 cursor-pointer"
           }`}
         >
           <div className="flex items-center gap-2 min-w-0">
@@ -418,33 +437,51 @@ const AutomationChannelsPanel = forwardRef<
               <p className="text-[11px] font-bold text-foreground truncate">
                 Nhóm Facebook
               </p>
-              {selectedGroups.length > 0 && (
-                <p className="text-[10px] text-primary font-semibold">
-                  {selectedGroups.length} nhóm đã chọn
+              {!AUTOMATION_CHANNELS_ENABLED ? (
+                <p className="text-[10px] text-muted-foreground">
+                  Đang phát triển
                 </p>
+              ) : (
+                selectedGroups.length > 0 && (
+                  <p className="text-[10px] text-primary font-semibold">
+                    {selectedGroups.length} nhóm đã chọn
+                  </p>
+                )
               )}
             </div>
           </div>
-          <ChevronRight
-            size={13}
-            className={`shrink-0 text-muted-foreground transition-transform ${
-              activeRail === "fbGroups" ? "rotate-90" : ""
-            }`}
-          />
+          {!AUTOMATION_CHANNELS_ENABLED ? (
+            <Lock size={13} className="shrink-0 text-muted-foreground" />
+          ) : (
+            <ChevronRight
+              size={13}
+              className={`shrink-0 text-muted-foreground transition-transform ${
+                activeRail === "fbGroups" ? "rotate-90" : ""
+              }`}
+            />
+          )}
         </button>
 
         {visibleJobBoardPlatforms.length > 0 && (
           <button
             type="button"
+            disabled={!AUTOMATION_CHANNELS_ENABLED}
             onClick={() =>
               setActiveRail((prev) =>
                 prev === "jobBoards" ? null : "jobBoards",
               )
             }
-            className={`w-full p-2.5 rounded-lg border cursor-pointer transition-all flex items-center justify-between gap-2 text-left ${
-              activeRail === "jobBoards"
-                ? "border-primary bg-primary/[0.03] shadow-xs"
-                : "border-border bg-card hover:border-border/80"
+            title={
+              AUTOMATION_CHANNELS_ENABLED
+                ? undefined
+                : "Tính năng đang phát triển"
+            }
+            className={`w-full p-2.5 rounded-lg border transition-all flex items-center justify-between gap-2 text-left ${
+              !AUTOMATION_CHANNELS_ENABLED
+                ? "border-border bg-muted/30 opacity-60 cursor-not-allowed"
+                : activeRail === "jobBoards"
+                  ? "border-primary bg-primary/[0.03] shadow-xs cursor-pointer"
+                  : "border-border bg-card hover:border-border/80 cursor-pointer"
             }`}
           >
             <div className="flex items-center gap-2 min-w-0">
@@ -455,25 +492,35 @@ const AutomationChannelsPanel = forwardRef<
                 <p className="text-[11px] font-bold text-foreground truncate">
                   Cổng tuyển dụng khác
                 </p>
-                {jobBoardsSelectedCount > 0 && (
-                  <p className="text-[10px] text-primary font-semibold">
-                    {jobBoardsSelectedCount} kênh đã chọn
+                {!AUTOMATION_CHANNELS_ENABLED ? (
+                  <p className="text-[10px] text-muted-foreground">
+                    Đang phát triển
                   </p>
+                ) : (
+                  jobBoardsSelectedCount > 0 && (
+                    <p className="text-[10px] text-primary font-semibold">
+                      {jobBoardsSelectedCount} kênh đã chọn
+                    </p>
+                  )
                 )}
               </div>
             </div>
-            <ChevronRight
-              size={13}
-              className={`shrink-0 text-muted-foreground transition-transform ${
-                activeRail === "jobBoards" ? "rotate-90" : ""
-              }`}
-            />
+            {!AUTOMATION_CHANNELS_ENABLED ? (
+              <Lock size={13} className="shrink-0 text-muted-foreground" />
+            ) : (
+              <ChevronRight
+                size={13}
+                className={`shrink-0 text-muted-foreground transition-transform ${
+                  activeRail === "jobBoards" ? "rotate-90" : ""
+                }`}
+              />
+            )}
           </button>
         )}
       </div>
 
       {/* ─── RIGHT PANEL ─── */}
-      {activeRail && (
+      {AUTOMATION_CHANNELS_ENABLED && activeRail && (
         <div className="flex-1 min-w-0 border-l border-border pl-4 space-y-3.5 animate-in fade-in slide-in-from-left-2 duration-200">
           {activeRail === "fbGroups" && (
             <>

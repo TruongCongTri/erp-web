@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Info,
   Clock,
@@ -32,6 +33,10 @@ import {
 
 import { DetailDrawer, DrawerSection } from "@/components/layouts/DetailDrawer";
 import { AppNotification } from "@/lib/store/notificationsApiSlice";
+import {
+  getLocaleFromPathname,
+  resolveNotificationActionHref,
+} from "@/lib/notificationLinks";
 
 // ─── DYNAMIC UI CONFIGS (Có thể import từ file config chung nếu bạn đã tách ra) ───
 const CATEGORY_CONFIG: Record<
@@ -170,12 +175,19 @@ export default function NotificationDrawer({
   noti,
   onClose,
 }: NotificationDrawerProps) {
+  const pathname = usePathname();
   const [openSections, setOpenSections] = useState({
     content: true,
     metadata: false, // Mặc định thu gọn Metadata để tập trung vào đọc tin nhắn
   });
 
   if (!noti) return null;
+
+  // Chuẩn hoá link BE trả về (vd: Yêu cầu tuyển dụng đã đổi route)
+  const actionHref = resolveNotificationActionHref(
+    noti.actionUrl,
+    getLocaleFromPathname(pathname),
+  );
 
   const toggleSection = (key: keyof typeof openSections) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -206,8 +218,8 @@ export default function NotificationDrawer({
         </div>
       }
       footer={
-        noti.actionUrl ? (
-          <Link href={noti.actionUrl} onClick={onClose} className="w-full">
+        actionHref ? (
+          <Link href={actionHref} onClick={onClose} className="w-full">
             <button className="btn-primary w-full flex items-center justify-center gap-2 text-sm shadow-sm py-2.5 rounded-xl">
               Mở liên kết trên hệ thống
               <ExternalLink size={15} />

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import type {
   ColumnDef,
@@ -73,6 +73,10 @@ import {
   AppNotification,
 } from "@/lib/store/notificationsApiSlice";
 import NotificationDrawer from "./NofificationDrawer";
+import {
+  getLocaleFromPathname,
+  resolveNotificationActionHref,
+} from "@/lib/notificationLinks";
 
 // ─── DYNAMIC UI CONFIGS BASED ON ENUMS ───────────────────────────────────────
 const CATEGORY_CONFIG: Record<
@@ -201,6 +205,7 @@ export default function NotificationsContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const locale = getLocaleFromPathname(pathname);
 
   // 1. Fetch Danh mục (Enums)
   const { data: enumsRes } = useGetNotificationEnumsQuery();
@@ -288,17 +293,37 @@ export default function NotificationsContent() {
     }
   };
 
-  // Tự động khôi phục (Auto-select) trạng thái nếu có ID trên URL (khi F5 / Chia sẻ link)
+  // ID đang chờ được mở: lấy từ URL lúc vào trang (F5 / chia sẻ link / bấm từ
+  // chuông thông báo). Giữ trong state để effect "SYNC URL" bên dưới không xoá
+  // mất `?id=` trong lúc danh sách còn đang tải.
+  const idFromUrl = searchParams.get("id");
+  const [pendingNotiId, setPendingNotiId] = useState<string | null>(idFromUrl);
+
+  // Chỉ phản ứng khi `id` trên URL thực sự đổi (vd: đang ở trang này rồi bấm 1
+  // thông báo trên chuông). Đóng Drawer sẽ xoá `id` khỏi URL nên lần sau bấm lại
+  // đúng thông báo đó vẫn mở được.
+  const handledUrlIdRef = useRef<string | null>(idFromUrl);
   useEffect(() => {
-    const idFromUrl = searchParams.get("id");
-    if (idFromUrl && !selectedNoti && fetchedList.length > 0) {
-      const noti = fetchedList.find((n) => n.id === idFromUrl);
-      if (noti) {
-        handleSelectNoti(noti);
-      }
+    if (idFromUrl === handledUrlIdRef.current) return;
+    handledUrlIdRef.current = idFromUrl;
+    if (idFromUrl) setPendingNotiId(idFromUrl);
+  }, [idFromUrl]);
+
+  // Tự động khôi phục (Auto-select) khi danh sách đã có dữ liệu
+  useEffect(() => {
+    if (!pendingNotiId) return;
+
+    const noti =
+      selectedNoti?.id === pendingNotiId
+        ? selectedNoti
+        : fetchedList.find((n) => n.id === pendingNotiId);
+
+    if (noti) {
+      handleSelectNoti(noti);
+      setPendingNotiId(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchedList]);
+  }, [pendingNotiId, fetchedList, selectedNoti]);
 
   // ─── SYNC URL ───
   useEffect(() => {
@@ -320,6 +345,9 @@ export default function NotificationsContent() {
     // Sync ID lên URL
     if (selectedNoti && !isRightCollapsed) {
       params.set("id", selectedNoti.id);
+    } else if (pendingNotiId) {
+      // Chưa resolve xong -> giữ nguyên id để không mất deep-link
+      params.set("id", pendingNotiId);
     }
 
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
@@ -332,6 +360,7 @@ export default function NotificationsContent() {
     dateRange,
     pagination,
     selectedNoti,
+    pendingNotiId,
     isRightCollapsed,
     pathname,
     router,
@@ -821,6 +850,11 @@ export default function NotificationsContent() {
               const prioCfg = PRIORITY_CONFIG[selectedNoti.priority] || PRIORITY_CONFIG.NORMAL;
               const actorCfg = ACTOR_TYPE_CONFIG[selectedNoti.actorType] || ACTOR_TYPE_CONFIG.SYSTEM_CRON;
               const ActorIcon = actorCfg.icon;
+              // Chuẩn hoá link BE trả về (vd: Yêu cầu tuyển dụng đã đổi route)
+              const actionHref = resolveNotificationActionHref(
+                selectedNoti.actionUrl,
+                locale,
+              );
 
               return (
                 <div className="flex flex-col h-full fade-in bg-card">
@@ -968,8 +1002,8 @@ export default function NotificationsContent() {
                       <Trash2 size={16} />
                     </ActionButton>
 
-                    {selectedNoti.actionUrl && (
-                      <Link href={selectedNoti.actionUrl} className="flex-1">
+                    {actionHref && (
+                      <Link href={actionHref} className="flex-1">
                         <button className="btn-primary w-full flex items-center justify-center gap-2 text-xs py-2.5 rounded-lg shadow-sm">
                           Hành động / Xem chi tiết <ExternalLink size={14} />
                         </button>

@@ -661,33 +661,36 @@ export default function CandidateCvDetailView({
     APPLICATION_STATUS_CONFIG[activeApp?.status as ApplicationPhase] ||
     APPLICATION_STATUS_CONFIG[ApplicationPhase.APPLIED];
 
-  const activeAiScore = activeCv?.aiScore ?? 85;
-  const activeAiTier =
-    activeCv?.aiTier || activeApp?.aiTier || AiScreeningTier.HIGH;
+  const hasActiveAiScore =
+    typeof activeCv?.aiScore === "number" && activeCv.aiScore >= 0;
+  const activeAiScore = hasActiveAiScore ? (activeCv!.aiScore as number) : null;
+  const activeAiTier = hasActiveAiScore
+    ? activeCv?.aiTier || activeApp?.aiTier || null
+    : null;
 
   const activeTierConfig =
-    activeAiTier === AiScreeningTier.HIGH || activeAiScore >= 80
-      ? { bg: "bg-emerald-500 text-white", label: "Tier 1 (Xuất sắc)" }
-      : activeAiTier === AiScreeningTier.MEDIUM || activeAiScore >= 50
-        ? { bg: "bg-amber-500 text-white", label: "Tier 2 (Kho tiềm năng)" }
-        : { bg: "bg-rose-500 text-white", label: "Tier 3 (Không đạt sơ bộ)" };
+    activeAiScore === null
+      ? {
+          bg: "bg-muted text-muted-foreground",
+          label: "Tier N/A",
+        }
+      : activeAiTier === AiScreeningTier.HIGH || activeAiScore >= 80
+        ? { bg: "bg-emerald-500 text-white", label: "Tier 1 (Xuất sắc)" }
+        : activeAiTier === AiScreeningTier.MEDIUM || activeAiScore >= 50
+          ? { bg: "bg-amber-500 text-white", label: "Tier 2 (Kho tiềm năng)" }
+          : { bg: "bg-rose-500 text-white", label: "Tier 3 (Không đạt sơ bộ)" };
 
   const matchedSkillsList =
     activeCv?.matchedSkills && activeCv.matchedSkills.length > 0
       ? activeCv.matchedSkills
       : candidate.skills && candidate.skills.length > 0
         ? candidate.skills
-        : [
-            "Đọc bản vẽ CAD",
-            "Bóc tách khối lượng BOQ",
-            "AutoCAD",
-            "Tiếng Anh chuyên ngành",
-          ];
+        : [];
 
   const missingSkillsList =
     activeCv?.missingSkills && activeCv.missingSkills.length > 0
       ? activeCv.missingSkills
-      : ["Revit MEP", "Hợp đồng FIDIC", "Chứng chỉ hành nghề giám sát"];
+      : [];
 
   return (
     <div className="flex flex-col h-screen w-full overflow-hidden bg-background">
@@ -882,7 +885,7 @@ export default function CandidateCvDetailView({
             <div className="grid grid-cols-3 gap-3 items-center bg-muted/20 p-3.5 rounded-xl border border-border/60">
               <div className="flex flex-col items-center justify-center text-center border-r border-border/60 pr-2">
                 <span className="text-2xl font-black font-mono text-foreground">
-                  {activeAiScore}
+                  {activeAiScore === null ? "N/A" : activeAiScore}
                 </span>
                 <span className="text-[10px] text-muted-foreground uppercase font-bold mt-0.5">
                   Điểm phù hợp
@@ -929,14 +932,20 @@ export default function CandidateCvDetailView({
                   <CheckCircle2 size={12} /> Kỹ năng đã xác thực trên CV
                 </p>
                 <div className="flex flex-wrap gap-1">
-                  {matchedSkillsList.map((sk: string) => (
-                    <span
-                      key={sk}
-                      className="px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200"
-                    >
-                      {sk}
+                  {matchedSkillsList.length > 0 ? (
+                    matchedSkillsList.map((sk: string) => (
+                      <span
+                        key={sk}
+                        className="px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200"
+                      >
+                        {sk}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-[11px] italic text-muted-foreground">
+                      N/A
                     </span>
-                  ))}
+                  )}
                 </div>
               </div>
 
@@ -946,14 +955,20 @@ export default function CandidateCvDetailView({
                   phỏng vấn
                 </p>
                 <div className="flex flex-wrap gap-1">
-                  {missingSkillsList.map((sk: string) => (
-                    <span
-                      key={sk}
-                      className="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200"
-                    >
-                      {sk}
+                  {missingSkillsList.length > 0 ? (
+                    missingSkillsList.map((sk: string) => (
+                      <span
+                        key={sk}
+                        className="px-2 py-0.5 rounded text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200"
+                      >
+                        {sk}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-[11px] italic text-muted-foreground">
+                      N/A
                     </span>
-                  ))}
+                  )}
                 </div>
               </div>
             </div>
