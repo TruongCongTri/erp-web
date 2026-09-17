@@ -11,6 +11,7 @@ import {
   Briefcase,
 } from "lucide-react";
 import HealthCheckButton from "@/components/buttons/HealthCheckButton";
+import { docArticles } from "../docs/docsData";
 import ActionButton from "@/components/buttons/ActionButton";
 
 export default async function WelcomePage({
@@ -100,7 +101,7 @@ export default async function WelcomePage({
               {
                 icon: <ShieldCheck size={24} className="text-emerald-600" />,
                 title: "Bảo mật & Phân quyền",
-                desc: "Ma trận phân quyền chi tiết (RBAC), kiểm soát truy cập và ghi log toàn bộ thao tác hệ thống.",
+                desc: "Ma trận phân quyền theo vai trò (RBAC) kết hợp phạm vi dữ liệu theo thuộc tính (ABAC), kiểm soát truy cập và ghi log toàn bộ thao tác hệ thống.",
                 bg: "bg-emerald-600/10",
                 border: "border-emerald-600/20",
               },
@@ -167,7 +168,7 @@ export default async function WelcomePage({
               <input
                 type="text"
                 name="q"
-                placeholder="Bạn cần tìm hướng dẫn gì? (VD: Xin nghỉ phép, Tạo yêu cầu tuyển dụng...)"
+                placeholder="Bạn cần tìm hướng dẫn gì? (VD: Xác thực email, Liên kết hồ sơ, Duyệt JD...)"
                 className="w-full pl-12 pr-32 py-4 rounded-xl border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
                 required
               />
@@ -184,15 +185,11 @@ export default async function WelcomePage({
                 Các tài liệu phổ biến
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {[
-                  "Quy trình xin nghỉ phép & Phê duyệt",
-                  "Hướng dẫn tạo yêu cầu tuyển dụng (JD)",
-                  "Cách thiết lập phân quyền (RBAC)",
-                  "Quy trình Onboarding nhân viên mới",
-                ].map((doc, idx) => (
+                {docArticles.slice(0, 4).map((doc) => (
                   <Link
-                    key={idx}
-                    href={`/${locale}/docs`}
+                    key={doc.slug}
+                    href={`/${locale}/docs/${doc.slug}`}
+                    title={doc.excerpt}
                     className="flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-background hover:border-primary/40 hover:bg-primary/5 transition-colors group"
                   >
                     <FileText
@@ -200,7 +197,7 @@ export default async function WelcomePage({
                       className="text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0"
                     />
                     <span className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-                      {doc}
+                      {doc.title}
                     </span>
                   </Link>
                 ))}
