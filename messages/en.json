@@ -1,0 +1,192 @@
+{
+  "Metadata": {
+    "title": "Chinh Nam | Management Platform",
+    "template": "%s | Chinh Nam",
+    "description": "An efficient management platform."
+  },
+  "NotFound": {
+    "heading": "Page Not Found",
+    "description": "The path you are trying to access does not exist or has been removed.",
+    "returnHome": "Return to Base"
+  },
+  "Error": {
+    "heading": "System Malfunction",
+    "description": "An unexpected error occurred. Our engineering team has been notified.",
+    "retry": "Initialize Retry"
+  },
+  "Header": {
+    "home": "Home",
+    "courses": "Courses",
+    "instructors": "Instructors",
+    "about": "About",
+    "login": "Get Started",
+    "lang_vi": "Tiếng Việt",
+    "lang_en": "English"
+  },
+  "Footer": {
+    "desc": "Empowering the next generation of engineers with high-precision training and cutting-edge robotics research.",
+    "education": "Education",
+    "curriculum": "Curriculum",
+    "certs": "Certifications",
+    "support": "Support",
+    "tech_support": "Technical Support",
+    "contact": "Contact",
+    "legal": "Legal",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "copyright": "© {year} Chính Nam. Kinetic Precision in Automation Education.",
+    "status": "All Systems Operational"
+  },
+  "Auth": {
+    "AuthLayout": {
+      "mission": "The Mission",
+      "heading_line1": "Advancing",
+      "heading_line2": "Kinetic",
+      "heading_line3": "Intelligence",
+      "description": "Access the most advanced robotics testing environment in the region. Your digital identity is the key to our laboratory ecosystem.",
+      "copyright": "© {year} Lab Systems",
+      "server_status": "SERVER STATUS: NOMINAL",
+      "version": "VERSION 2.4.0-STABLE",
+      "logo": "Chính Nam"
+    },
+    "AuthError": {
+      "heading": "Login Error",
+      "desc_cors": "Cross-Origin Resource Sharing error. Browser blocked the connection.",
+      "desc_default": "Could not complete the identity verification process. Please try again.",
+      "retry": "Retry",
+      "home": "Return to Base"
+    },
+    "Login": {
+      "badge": "Welcome Back",
+      "title_1": "Sign",
+      "title_2": "In",
+      "description": "Access your laboratory workstation and continue your development sequence.",
+      "email_label": "Student ID / Email",
+      "email_placeholder": "student@vietdynamic.edu",
+      "password_label": "Access Code",
+      "password_placeholder": "••••••••",
+      "remember": "Remember System",
+      "reset_access": "Reset Access",
+      "btn_submitting": "Authenticating...",
+      "btn_submit": "Initialize Session",
+      "or_auth": "Or Authenticate Via",
+      "no_account": "Don't have an account?",
+      "register_link": "Register here",
+      "validation_email": "Please enter a valid institute email address",
+      "validation_password": "Access code must be at least 6 characters"
+    },
+    "Register": {
+      "badge": "New Enrollment",
+      "title_1": "Create",
+      "title_2": "Account",
+      "description": "Join the next generation of robotics engineering and kinetic automation.",
+      "name_label": "Full Engineering Name",
+      "name_placeholder": "ALEXANDER KINETIC",
+      "email_label": "Institute Email",
+      "email_placeholder": "alex@lab.vietdynamic.edu",
+      "password_label": "Secure Password",
+      "password_placeholder": "MIN 12 CHARACTERS",
+      "btn_submitting": "Processing...",
+      "btn_submit": "Register Identity",
+      "has_account": "Already have an account?",
+      "login_link": "Sign In here",
+      "terms_prefix": "By registering, you agree to our ",
+      "terms_protocol": "System Protocol",
+      "terms_and": " and ",
+      "terms_operational": "Operational Terms",
+      "validation_name": "Full name must be at least 3 characters",
+      "validation_email": "Please enter a valid institute email",
+      "validation_password": "Password must be at least 12 characters"
+    },
+    "ResetPassword": {
+      "badge": "System Override",
+      "title_1": "New",
+      "title_2": "Password",
+      "description": "Enter the 6-digit code sent to your email to establish a new secure connection.",
+      "email_label": "Institute Email",
+      "email_placeholder": "alex@lab.vietdynamic.vn",
+      "code_label": "6-Digit Override Code",
+      "code_placeholder": "000000",
+      "password_label": "New Secure Password",
+      "password_placeholder": "MIN 6 CHARS, UPPERCASE & NUMBER",
+      "btn_submitting": "Synchronizing...",
+      "btn_submit": "Confirm Override",
+      "abort": "ABORT PROCEDURE",
+      "validation_email": "Please enter a valid institute email",
+      "validation_code": "Code must be exactly 6 digits",
+      "validation_password": "Password must be at least 6 characters"
+    },
+    "ForgotPassword": {
+      "badge": "Security Protocol",
+      "title_1": "Recover",
+      "title_2": "Access",
+      "description": "Enter your institute email. We will transmit an override code to your secure inbox.",
+      "email_label": "Institute Email",
+      "email_placeholder": "alex@lab.vietdynamic.vn",
+      "btn_submitting": "Transmitting...",
+      "btn_submit": "Send Override Code",
+      "return_login": "RETURN TO LOGIN",
+      "validation_email": "Please enter a valid institute email address"
+    }
+  },
+  "Home": {
+    "Hero": {
+      "badge": "Velocity Intelligence",
+      "title_1": "FUTURE",
+      "title_2": "VELOCITY",
+      "subtitle": "Master the kinetic precision of next-generation industrial robotics through our high-performance automation curriculum.",
+      "btn_explore": "Explore Labs",
+      "btn_roadmap": "View Roadmap"
+    },
+    "Features": {
+      "title": "Revolutionize Your Workflow",
+      "subtitle": "Harness the power of technical mastery and high-end engineering principles.",
+      "card1_title": "Real-time Kinematics",
+      "card1_desc": "Our specialized algorithms focus on sub-millisecond precision for multi-axis industrial hardware.",
+      "card1_btn": "Deep Dive",
+      "card2_title": "Neural Integration",
+      "card2_desc": "Seamlessly connecting AI vision systems with physical robotic controllers for autonomous operation.",
+      "card3_title": "Hardware Labs",
+      "card3_desc": "Access remote high-performance labs from anywhere.",
+      "card4_title": "Legacy vs Next-Gen",
+      "card4_desc": "We don't just teach old standards. We define the future of the industrial stack.",
+      "continue_learning": "Continue Learning",
+      "next_lesson": "Next up: {lesson}",
+      "progress": "{percent}% Completed",
+      "resume_btn": "Resume Course"
+    },
+    "Courses": {
+      "title": "Expert-Led Training",
+      "subtitle": "Industrial certification tracks designed for current and future engineers.",
+      "btn_view_all": "View All Courses",
+      "duration_12": "12 Weeks",
+      "duration_8": "8 Weeks",
+      "duration_24": "24 Weeks",
+      "tag_advanced": "Advanced Certification",
+      "tag_mastery": "Mastery Level",
+      "tag_degree": "Degree Track",
+      "course1_title": "Cobot Safety Systems",
+      "course1_desc": "Master human-robot collaboration safety standards and implementation in active factory floors.",
+      "course2_title": "Logic & PLC Programming",
+      "course2_desc": "Complete immersion in industrial logic controllers and modern scripting for automated lines.",
+      "course3_title": "Smart Factory Design",
+      "course3_desc": "From empty warehouse to lights-out production. Design the end-to-end flow of modern manufacturing."
+    },
+    "Network": {
+      "title_1": "Global Automation",
+      "title_2": "Network",
+      "item1_title": "140+ Partner Sites",
+      "item1_desc": "Access local workshops and hands-on testing facilities in major industrial hubs worldwide.",
+      "item2_title": "Enterprise Ecosystem",
+      "item2_desc": "Connect with recruiters from top robotics firms directly through our internal talent platform.",
+      "cities": ["San Francisco", "Ho Chi Minh City", "Munich", "Tokyo"]
+    },
+    "CTA": {
+      "title_1": "THE KINETIC ERA",
+      "title_2": "STARTS NOW",
+      "subtitle": "Join 50,000+ engineers redefining the boundaries of automation and robotic interaction.",
+      "btn_enroll": "Enroll Today",
+      "btn_tour": "Schedule Tour"
+    }
+  }
+}

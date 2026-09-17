@@ -1,0 +1,452 @@
+@import "tailwindcss";
+
+/* 1. Map your custom variables to Tailwind v4's theme engine */
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-light: var(--primary-light);
+  --color-primary-lighter: var(--primary-lighter);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-base-100: var(--base-100);
+  --color-base-200: var(--base-200);
+  --color-base-250: var(--base-250);
+  --color-base-300: var(--base-300);
+  --color-base-350: var(--base-350);
+  --color-base-400: var(--base-400);
+  --color-base-450: var(--base-450);
+  --color-base-500: var(--base-500);
+
+  --color-highlight-green: var(--highlight-green);
+
+  --radius: var(--radius);
+  --font-sans: var(--font-sans);
+}
+
+@layer base {
+  :root {
+    --background: #f4f5f0;
+    --foreground: #1a2e1f;
+    --primary: #2d6a4f;
+    --primary-foreground: #ffffff;
+    --primary-light: #52b788;
+    --primary-lighter: #74c69d;
+    --secondary: #e8ede9;
+    --secondary-foreground: #2d6a4f;
+    --accent: #52b788;
+    --accent-foreground: #ffffff;
+    --muted: #e2e8e3;
+    --muted-foreground: #6b7c6e;
+    --card: #ffffff;
+    --card-foreground: #1a2e1f;
+    --border: #d1dbd3;
+    --input: #e8ede9;
+    --ring: #2d6a4f;
+    --radius: 6px;
+    --font-sans: var(--font-plus-jakarta-sans), sans-serif;
+    --sidebar-width: 240px;
+    --sidebar-collapsed: 64px;
+    --topbar-height: 52px;
+
+    /* Base color scale — default: green (matches primary) */
+    --base-100: rgb(209, 236, 220);
+    --base-200: rgb(148, 199, 172);
+    --base-250: rgb(100, 170, 133);
+    --base-300: rgb(64, 145, 100);
+    --base-350: rgb(45, 106, 79);
+    --base-400: rgb(27, 67, 50);
+    --base-450: rgb(18, 45, 34);
+    --base-500: rgb(9, 23, 17);
+
+    /* Highlight */
+    --highlight-green: #02b921;
+
+    /* ==========================================================================
+        1. SYSTEM STATES (The Vibe: Universal UI Indicators)
+        ========================================================================== */
+
+    /* Error / Critical / Destructive */
+    --state-error-fg: #dc2626; /* Red-600 */
+    --state-error-bg: rgba(220, 38, 38, 0.05);
+
+    /* Success / Complete / Positive */
+    --state-success-fg: #047857; /* Emerald-700 (Accessible Green) */
+    --state-success-bg: rgba(5, 150, 105, 0.06);
+
+    /* Warning / Attention / Pending */
+    --state-warning-fg: #b45309; /* Amber-700 */
+    --state-warning-bg: rgba(217, 119, 6, 0.08); /* 8% opacity for legibility */
+
+    /* Info / Active / Primary */
+    --state-info-fg: #2563eb; /* Blue-600 */
+    --state-info-bg: rgba(37, 99, 235, 0.05);
+
+    /* Neutral / Draft / Inactive */
+    --state-neutral-fg: #475569; /* Slate-600 */
+    --state-neutral-bg: rgba(71, 85, 105, 0.05);
+
+    /* Special / Premium / Upgrade */
+    --state-special-fg: #9333ea; /* Purple-600 */
+    --state-special-bg: rgba(147, 51, 234, 0.05);
+
+    /* ==========================================================================
+        2. ATS PIPELINE STATES (The Vibe: Forward Momentum)
+        ========================================================================== */
+
+    /* New / Sourced / Applied */
+    --ats-new-fg: #4f46e5; /* Indigo-600 */
+    --ats-new-bg: rgba(79, 70, 229, 0.05);
+
+    /* In Review / Interviewing (Maps to Info) */
+    --ats-review-fg: var(--state-info-fg);
+    --ats-review-bg: var(--state-info-bg);
+
+    /* Offer Extended / Pending (Maps to Warning) */
+    --ats-offer-fg: var(--state-warning-fg);
+    --ats-offer-bg: var(--state-warning-bg);
+
+    /* Hired / Placed (Maps to Success) */
+    --ats-hired-fg: var(--state-success-fg);
+    --ats-hired-bg: var(--state-success-bg);
+
+    /* Rejected / Disqualified / Withdrawn */
+    --ats-rejected-fg: #64748b; /* Slate-500 */
+    --ats-rejected-bg: rgba(100, 116, 139, 0.04);
+
+    /* ==========================================================================
+        3. HRIS EMPLOYEE MANAGEMENT (The Vibe: Availability & Compliance)
+        ========================================================================== */
+
+    /* Active / Regular Status (Maps to Neutral) */
+    --hris-active-fg: var(--state-neutral-fg);
+    --hris-active-bg: var(--state-neutral-bg);
+
+    /* Onboarding / Probationary */
+    --hris-onboarding-fg: #0d9488; /* Teal-600 */
+    --hris-onboarding-bg: rgba(13, 148, 136, 0.05);
+
+    /* On Leave (Maps to Special) */
+    --hris-leave-fg: var(--state-special-fg);
+    --hris-leave-bg: var(--state-special-bg);
+
+    /* Action Required (Maps to Error) */
+    --hris-action-fg: var(--state-error-fg);
+    --hris-action-bg: var(--state-error-bg);
+
+    /* Offboarding / Terminated / Alumni */
+    --hris-terminated-fg: #6b7280; /* Gray-500 */
+    --hris-terminated-bg: rgba(107, 114, 128, 0.04);
+  }
+
+  * {
+    box-sizing: border-box;
+    border-color: var(--border);
+  }
+
+  body {
+    background-color: #f8f9fa;
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* Bump root font size up by two levels (e.g., from default 16px to 18px) */
+    font-size: 1.125rem; /* equivalent to text-lg */
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p {
+    margin: 0;
+  }
+}
+
+@layer utilities {
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .scrollbar-hide {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+  }
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sidebar-transition {
+    transition: width 300ms ease;
+  }
+
+  .fade-in {
+    animation: fadeIn 200ms ease forwards;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-slide-up {
+    animation: slideUp 280ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(100%);
+    }
+    to {
+      transform: translateY(0);
+    }
+  }
+
+  .slide-in-right {
+    animation: slideInRight 200ms ease forwards;
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .pulse-highlight {
+    animation: pulseHighlight 600ms ease;
+  }
+
+  @keyframes pulseHighlight {
+    0% {
+      background-color: transparent;
+    }
+    30% {
+      background-color: rgba(82, 183, 136, 0.15);
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+
+  .nav-item-active {
+    background-color: rgba(82, 183, 136, 0.15);
+    color: var(--primary);
+    border-right: 3px solid var(--primary);
+  }
+
+  .permission-checkbox-checked {
+    accent-color: var(--primary);
+  }
+
+  .gradient-primary {
+    background: linear-gradient(
+      135deg,
+      var(--primary) 0%,
+      var(--primary-light) 100%
+    );
+  }
+
+  .text-highlight {
+    color: var(--highlight-green);
+  }
+
+  .base-100 {
+    background-color: var(--base-100);
+  }
+  .base-200 {
+    background-color: var(--base-200);
+  }
+  .base-300 {
+    background-color: var(--base-300);
+  }
+  .base-400 {
+    background-color: var(--base-400);
+  }
+  .base-500 {
+    background-color: var(--base-500);
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary text-primary-foreground px-4 py-2 rounded text-base font-semibold hover:opacity-90 active:scale-95 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground px-4 py-2 rounded text-base font-medium hover:bg-muted active:scale-95 transition-all duration-150;
+  }
+
+  .btn-ghost {
+    @apply px-3 py-1.5 rounded text-base font-medium text-muted-foreground hover:bg-muted hover:text-foreground active:scale-95 transition-all duration-150;
+  }
+
+  .card {
+    @apply bg-card rounded-lg border border-border shadow-sm;
+  }
+
+  /* ==========================================================================
+     BASE BADGE COMPONENT
+     Apply this to all tags to ensure consistent padding, alignment, and border
+     ========================================================================== */
+  .badge {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold tracking-wide whitespace-nowrap shadow-sm border;
+    /* The border uses a highly transparent version of the foreground color to frame it cleanly */
+    border-color: color-mix(in srgb, currentColor 15%, transparent);
+  }
+
+  /* SVG/Icon inheritance: forces icons inside badges to inherit the exact foreground color */
+  .badge svg {
+    @apply flex-shrink-0 stroke-[2.5px];
+  }
+
+  /* ==========================================================================
+     SYSTEM STATE MODIFIERS
+     ========================================================================== */
+  .badge-error {
+    color: var(--state-error-fg);
+    background-color: var(--state-error-bg);
+  }
+  .badge-success {
+    color: var(--state-success-fg);
+    background-color: var(--state-success-bg);
+  }
+  .badge-warning {
+    color: var(--state-warning-fg);
+    background-color: var(--state-warning-bg);
+  }
+  .badge-info {
+    color: var(--state-info-fg);
+    background-color: var(--state-info-bg);
+  }
+  .badge-neutral {
+    color: var(--state-neutral-fg);
+    background-color: var(--state-neutral-bg);
+  }
+  .badge-special {
+    color: var(--state-special-fg);
+    background-color: var(--state-special-bg);
+  }
+
+  /* ==========================================================================
+     ATS PIPELINE MODIFIERS
+     ========================================================================== */
+  .badge-ats-new {
+    color: var(--ats-new-fg);
+    background-color: var(--ats-new-bg);
+  }
+  .badge-ats-review {
+    color: var(--ats-review-fg);
+    background-color: var(--ats-review-bg);
+  }
+  .badge-ats-offer {
+    color: var(--ats-offer-fg);
+    background-color: var(--ats-offer-bg);
+  }
+  .badge-ats-hired {
+    color: var(--ats-hired-fg);
+    background-color: var(--ats-hired-bg);
+  }
+  .badge-ats-rejected {
+    color: var(--ats-rejected-fg);
+    background-color: var(--ats-rejected-bg);
+  }
+
+  /* ==========================================================================
+     HRIS EMPLOYEE MODIFIERS
+     ========================================================================== */
+  .badge-hris-active {
+    color: var(--hris-active-fg);
+    background-color: var(--hris-active-bg);
+  }
+  .badge-hris-onboarding {
+    color: var(--hris-onboarding-fg);
+    background-color: var(--hris-onboarding-bg);
+  }
+  .badge-hris-leave {
+    color: var(--hris-leave-fg);
+    background-color: var(--hris-leave-bg);
+  }
+  .badge-hris-action {
+    color: var(--hris-action-fg);
+    background-color: var(--hris-action-bg);
+  }
+  .badge-hris-terminated {
+    color: var(--hris-terminated-fg);
+    background-color: var(--hris-terminated-bg);
+    @apply line-through decoration-gray-400/50; /* Strikethrough to indicate deactivated */
+  }
+
+  .badge-active {
+    @apply bg-green-100 text-green-800;
+  }
+
+  .badge-inactive {
+    @apply bg-gray-100 text-gray-600;
+  }
+
+  .badge-pending {
+    @apply bg-amber-100 text-amber-800;
+  }
+
+  .badge-terminated {
+    @apply bg-red-100 text-red-700;
+  }
+
+  .badge-default {
+    @apply bg-primary text-primary-foreground text-sm px-2 py-0.5 rounded;
+  }
+
+  .input-base {
+    @apply w-full px-3 py-2 text-base border border-border rounded bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 transition-all;
+  }
+  .table-row-hover {
+    @apply transition-colors duration-100 cursor-pointer;
+  }
+
+  .section-header {
+    @apply text-sm font-semibold uppercase tracking-widest text-muted-foreground px-3 py-2;
+  }
+}
+
+@keyframes indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+.writing-mode-vertical {
+  writing-mode: vertical-rl;
+}
