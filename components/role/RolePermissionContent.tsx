@@ -255,6 +255,7 @@ export default function RolePermissionContent() {
       skip: !selectedRoleId,
     });
 
+  const isDataLoading = rolesLoading || rolesFetching;
   // Extract Data safely
   const rolesData = rolesRes?.data || [];
   const totalRows = rolesRes?.meta?.pagination?.total || 0;
@@ -1162,7 +1163,9 @@ export default function RolePermissionContent() {
                 onPaginationChange={setPagination}
                 facetFilters={facetFiltersNode}
                 mobileFacetFilters={mobileFacetFiltersNode}
-                isLoading={rolesLoading}
+                isFetching={rolesFetching}
+                isLoading={isDataLoading}
+                // isLoading={rolesLoading}
                 skeletonRowCount={8}
                 onRowClick={(row) => handleSelectRole(row.original.id)} // Pass ID instead of object
               />

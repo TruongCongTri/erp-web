@@ -736,7 +736,8 @@ export default function EmployeeManagementContent() {
           facetFilters={facetFiltersNode}
           mobileFacetFilters={mobileFacetFiltersNode}
           isFetching={isFetching}
-          isLoading={isLoading} // change from isDataLoading
+          isLoading={isDataLoading}
+          // isLoading={isLoading} // change from isDataLoading
           skeletonRowCount={8}
           enableMultiRowSelection={true}
         />

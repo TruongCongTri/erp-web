@@ -425,6 +425,7 @@ export default function ResourcesContent() {
       skip: !selectedResourceId,
     });
 
+  const isDataLoading = resourcesLoading || resourcesFetching;
   const [updateResource, { isLoading: isUpdatingResource }] =
     useUpdateResourceMutation();
   const [deletePermission] = useDeletePermissionMutation();
@@ -1358,7 +1359,9 @@ export default function ResourcesContent() {
                   }
                   pagination={pagination}
                   onPaginationChange={setPagination}
-                  isLoading={resourcesLoading}
+                  // isLoading={resourcesLoading}
+                  isFetching={resourcesFetching}
+                  isLoading={isDataLoading}
                   skeletonRowCount={8}
                   onRowClick={(row) => handleSelectResource(row.original.id)}
                 />

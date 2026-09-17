@@ -742,7 +742,8 @@ export default function ProfileManagementContent() {
           tabletHiddenColumns={["joinDate", "contractType"]}
           facetFilters={facetFiltersNode}
           mobileFacetFilters={mobileFacetFiltersNode}
-          isLoading={isLoading}
+          isFetching={isFetching}
+          isLoading={isDataLoading}
           skeletonRowCount={8}
           enableMultiRowSelection={true}
         />

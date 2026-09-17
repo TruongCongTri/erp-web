@@ -329,6 +329,7 @@ export default function UsersAccessContent() {
   const { data: rolesRes } = useGetRolesQuery({ limit: 100 });
   const [updateUserAccess, { isLoading: isUpdating }] =
     useUpdateUserAccessMutation();
+  const isDataLoading = usersLoading || usersFetching;
 
   const usersData: UserData[] = Array.isArray(usersRes)
     ? usersRes
@@ -1093,7 +1094,9 @@ export default function UsersAccessContent() {
                 }
                 pagination={pagination}
                 onPaginationChange={setPagination}
-                isLoading={usersLoading}
+                isFetching={usersFetching}
+                isLoading={isDataLoading}
+                // isLoading={usersLoading}
                 skeletonRowCount={8}
                 onRowClick={(row) => handleSelectUser(row.original.id)}
               />

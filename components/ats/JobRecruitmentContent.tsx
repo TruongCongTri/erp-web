@@ -787,6 +787,8 @@ export default function JobRecruitmentContent() {
           emptyIcon={
             <FileText size={32} className="text-muted-foreground/30" />
           }
+          // isFetching={}
+          // isLoading={}
         />
       </div>
 
