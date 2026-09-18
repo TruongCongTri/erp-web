@@ -7,5 +7,5 @@ export default async function JobDetailPage({
   params: Promise<{ id: string; locale: string }>;
 }) {
   const { id, locale } = await params;
-  return <JobPostDetailContent id={id} locale={locale} />;
+  return <JobPostDetailContent id={id} locale={locale} onBack={() => {}} />;
 }

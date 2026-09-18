@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import type {
   ColumnDef,
@@ -7,7 +8,6 @@ import type {
   StockFeatures,
 } from "@tanstack/react-table";
 import {
-  Search,
   Users,
   Shield,
   User,
@@ -30,13 +30,12 @@ import {
   Edit,
   Copy,
   Trash2,
+  ChevronLeft,
 } from "lucide-react";
 import {
   DataTable,
   SortHeader,
   TriStateCheckbox,
-  FacetFilter,
-  MobileFilterSheet,
 } from "@/components/ui/DataTable";
 import {
   DetailLayout,
@@ -56,7 +55,6 @@ import { Permission, SystemResource, Role } from "@/types/modelsver2";
 import { RoleCombobox } from "../combobox/RoleCombobox";
 
 import ActionButton from "@/components/buttons/ActionButton";
-import ActionSwitch from "@/components/buttons/ActionSwitch";
 
 // ─── API Types Mapping ────────────────────────────────────────────────────────
 interface UserRole {
@@ -135,7 +133,6 @@ function BonusPermissionGroupCard({
 
   if (permissions.length === 0) return null;
 
-  // For Select All logic, we only care about permissions that are NOT inherited
   const togglablePerms = permissions.filter((p) => !rolePerms.has(p.id));
   const allTogglableChecked =
     togglablePerms.length > 0 &&
@@ -343,7 +340,6 @@ export default function UsersAccessContent() {
   const matrixData = matrixRes?.data || [];
   const availableRoles = rolesRes?.data || [];
 
-  // Smart Fallback Logic: Try table data first, then API data
   const userInfo = useMemo(() => {
     if (!selectedUserId) return null;
     const fromTable = usersData.find((u: UserData) => u.id === selectedUserId);
@@ -366,7 +362,6 @@ export default function UsersAccessContent() {
     bonus: true,
   });
 
-  // Derive Role Permissions from the selected Role ID
   const rolePermsSet = useMemo(() => {
     if (!selectedRoleId) return new Set<string>();
 
@@ -409,7 +404,6 @@ export default function UsersAccessContent() {
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
   };
 
-  // Frontend Filtering
   const deptFilterKey = deptFilter.join(",");
   const filteredUsers = useMemo(() => {
     if (deptFilter.length === 0) return usersData;
@@ -420,7 +414,6 @@ export default function UsersAccessContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [usersData, deptFilterKey]);
 
-  // Render Phase State Sync
   const [prevUserDetails, setPrevUserDetails] = useState<any>(null);
   if (userDetailsRes !== prevUserDetails) {
     setPrevUserDetails(userDetailsRes);
@@ -431,7 +424,6 @@ export default function UsersAccessContent() {
     }
   }
 
-  // Check if there are unsaved changes
   const hasChanges = useMemo(() => {
     const data = userDetailsRes?.data;
     if (!data) return false;
@@ -545,7 +537,9 @@ export default function UsersAccessContent() {
               </div>
               <div className="min-w-0">
                 <p
-                  className={`text-xs font-bold truncate transition-colors ${isSelected ? "text-primary" : "text-foreground"}`}
+                  className={`text-xs font-bold truncate transition-colors ${
+                    isSelected ? "text-primary" : "text-foreground"
+                  }`}
                 >
                   {row.original.fullName}
                 </p>
@@ -648,8 +642,9 @@ export default function UsersAccessContent() {
               onClick={(e: any) => e.stopPropagation()}
             >
               <button
+                type="button"
                 onClick={() => handleSelectUser(row.original.id)}
-                className={`p-1.5 rounded transition-colors ${
+                className={`p-1.5 rounded transition-colors cursor-pointer ${
                   isViewing
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "hover:bg-blue-50 text-muted-foreground hover:text-blue-600"
@@ -699,7 +694,8 @@ export default function UsersAccessContent() {
               </ActionButton>
 
               <button
-                className="p-1.5 rounded hover:bg-muted text-muted-foreground transition-colors"
+                type="button"
+                className="p-1.5 rounded hover:bg-muted text-muted-foreground transition-colors cursor-pointer"
                 title="Thêm tùy chọn"
               >
                 <MoreHorizontal size={14} />
@@ -713,375 +709,384 @@ export default function UsersAccessContent() {
     [selectedUserId, handleSelectUser],
   );
 
-  const clearAllFilters = () => {
-    setGlobalFilter("");
-    setDeptFilter([]);
-    setPagination((p) => ({ ...p, pageIndex: 0 }));
-  };
-
   return (
-    <div className="flex flex-col h-full bg-background overflow-hidden">
-      <div className="flex lg:hidden flex-1 items-center justify-center px-6">
-        <div className="text-center max-w-xs bg-card p-6 rounded-2xl border border-border shadow-sm">
-          <Monitor size={40} className="text-primary/40 mx-auto mb-4" />
-          <h2 className="text-sm font-bold text-foreground mb-2">
-            Tính năng tối ưu cho Desktop
-          </h2>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            Quản lý phân quyền người dùng yêu cầu không gian hiển thị rộng. Vui
-            lòng sử dụng máy tính để trải nghiệm.
-          </p>
-        </div>
-      </div>
-
-      {/* ── Global Header ── */}
-      <div className="flex-shrink-0 px-4 md:px-5 py-4 border-b border-border bg-card z-10 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <h1 className="text-base md:text-lg font-bold text-foreground">
-              Phân quyền Người dùng
-            </h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Quản lý vai trò và cấp quyền ngoại lệ cho từng cá nhân
+    <div className="flex flex-col h-full bg-background overflow-hidden relative">
+      {/* ── MOBILE & TABLET RESTRICTION (< xl / < 1280px) ── */}
+      <div className="flex xl:hidden flex-1 h-full w-full items-center justify-center p-6 bg-background">
+        <div className="text-center max-w-sm bg-card p-8 rounded-2xl border border-border shadow-md space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto shadow-2xs">
+            <Monitor size={30} />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-base font-bold text-foreground">
+              Yêu cầu màn hình máy tính (Desktop)
+            </h2>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Tính năng <strong>Phân quyền Người dùng</strong> được thiết kế theo cấu trúc 3 cột song song (Danh sách Nhân viên - Thông tin tài khoản - Quyền mở rộng) để quản lý ma trận IAM an toàn.
+            </p>
+            <p className="text-[11px] text-muted-foreground/80 leading-relaxed bg-muted/40 p-2.5 rounded-lg border border-border/60">
+              Vui lòng sử dụng máy tính có màn hình từ <strong>1280px trở lên</strong> (không hỗ trợ điện thoại và máy tính bảng).
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <ActionButton
-              variant="ghost"
-              className="hidden sm:flex !h-8 !px-3 !text-xs !font-medium"
-              isLoading={usersFetching}
-              onAction={async () => {
-                await new Promise((r) => setTimeout(r, 1200));
-                return "Danh_sach_Phan_quyen.xlsx";
-              }}
-              loadingMessage="Đang chuẩn bị dữ liệu xuất..."
-              successMessage={(file) => `Đã tải xuống ${file}`}
-              toastOptions={{ showProgress: true, duration: 5000 }}
-            >
-              <Download size={13} /> Xuất Excel
-            </ActionButton>
-
-            <ActionButton
-              variant="ghost"
-              className="hidden sm:flex !h-8 !px-3 !text-xs !font-medium"
-              isLoading={usersFetching}
-              onAction={async () => {
-                await refetchUsers();
-              }}
-              loadingMessage="Đang làm mới..."
-              successMessage="Dữ liệu đã được cập nhật"
-            >
-              <RefreshCw size={13} /> Làm mới
-            </ActionButton>
-          </div>
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="btn-secondary text-xs px-4 py-2 mt-2 cursor-pointer inline-flex items-center gap-1.5"
+          >
+            <ChevronLeft size={14} /> Quay lại trang trước
+          </button>
         </div>
       </div>
 
-      {/* ── 3-Column Architecture ── */}
-      <div className="flex-1 min-h-0 relative">
-        <DetailLayout
-          title="Quản lý Truy cập"
-          /* ── LEFT COLUMN: User Context ── */
-          leftSidebar={{
-            collapsed: leftCollapsed,
-            onCollapseChange: setLeftCollapsed,
-            defaultCollapsed: !selectedUserId,
-            content: (collapsed) => {
-              if (collapsed || !selectedUserId) {
+      {/* ── DESKTOP-ONLY INTERFACE (>= xl / >= 1280px) ── */}
+      <div className="hidden xl:flex flex-col h-full flex-1 min-h-0 overflow-hidden">
+        {/* Global Header */}
+        <div className="flex-shrink-0 px-5 py-4 border-b border-border bg-card z-10 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h1 className="text-lg font-bold text-foreground">
+                Phân quyền Người dùng
+              </h1>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {totalRows} tài khoản · Quản lý vai trò và cấp quyền ngoại lệ cho từng cá nhân
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <ActionButton
+                variant="ghost"
+                className="!h-8 !px-3 !text-xs !font-medium"
+                isLoading={usersFetching}
+                onAction={async () => {
+                  await new Promise((r) => setTimeout(r, 1200));
+                  return "Danh_sach_Phan_quyen.xlsx";
+                }}
+                loadingMessage="Đang chuẩn bị dữ liệu xuất..."
+                successMessage={(file) => `Đã tải xuống ${file}`}
+                toastOptions={{ showProgress: true, duration: 5000 }}
+              >
+                <Download size={13} /> Xuất Excel
+              </ActionButton>
+
+              <ActionButton
+                variant="ghost"
+                className="!h-8 !px-3 !text-xs !font-medium"
+                isLoading={usersFetching}
+                onAction={async () => {
+                  await refetchUsers();
+                }}
+                loadingMessage="Đang làm mới..."
+                successMessage="Dữ liệu đã được cập nhật"
+              >
+                <RefreshCw size={13} /> Làm mới
+              </ActionButton>
+            </div>
+          </div>
+        </div>
+
+        {/* 3-Column Architecture */}
+        <div className="flex-1 min-h-0 relative">
+          <DetailLayout
+            // title="Quản lý Truy cập"
+            leftSidebar={{
+              collapsed: leftCollapsed,
+              onCollapseChange: setLeftCollapsed,
+              defaultCollapsed: !selectedUserId,
+              content: (collapsed) => {
+                if (collapsed || !selectedUserId) {
+                  return (
+                    <div className="flex flex-col items-center py-6 gap-6 text-muted-foreground fade-in h-full">
+                      <div
+                        className="relative group cursor-help"
+                        title="Vui lòng chọn nhân viên"
+                      >
+                        <User size={20} />
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (!userInfo) return null;
+
                 return (
-                  <div className="flex flex-col items-center py-6 gap-6 text-muted-foreground fade-in h-full">
-                    <div
-                      className="relative group cursor-help"
-                      title="Vui lòng chọn nhân viên"
-                    >
-                      <User size={20} />
-                    </div>
-                  </div>
-                );
-              }
-
-              if (!userInfo) return null;
-
-              return (
-                <div className="flex flex-col h-full fade-in p-5">
-                  <div className="flex flex-col items-center text-center mb-6">
-                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl mb-3 shadow-sm border-2 border-background ring-2 ring-primary/20">
-                      {userInfo.fullName.slice(0, 2).toUpperCase()}
-                    </div>
-                    <h2 className="text-base font-bold text-foreground">
-                      {userInfo.fullName}
-                    </h2>
-                    <div className="mt-2">
-                      <Badge
-                        config={
-                          statusConfig[userInfo.status] || statusConfig.INACTIVE
-                        }
-                      />
-                    </div>
-
-                    <div className="w-full mt-6 space-y-3 text-left">
-                      <div className="flex items-center gap-3 text-xs">
-                        <div className="w-6 h-6 rounded flex items-center justify-center bg-muted flex-shrink-0 text-muted-foreground">
-                          <Briefcase size={12} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-muted-foreground text-[10px]">
-                            Chức vụ
-                          </p>
-                          <p className="font-semibold text-foreground truncate">
-                            {userInfo.profile?.jobTitle || "Chưa cập nhật"}
-                          </p>
-                        </div>
+                  <div className="flex flex-col h-full fade-in p-5">
+                    <div className="flex flex-col items-center text-center mb-6">
+                      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl mb-3 shadow-sm border-2 border-background ring-2 ring-primary/20">
+                        {userInfo.fullName.slice(0, 2).toUpperCase()}
                       </div>
-                      <div className="flex items-center gap-3 text-xs">
-                        <div className="w-6 h-6 rounded flex items-center justify-center bg-muted flex-shrink-0 text-muted-foreground">
-                          <Building2 size={12} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-muted-foreground text-[10px]">
-                            Phòng ban
-                          </p>
-                          <p className="font-semibold text-foreground truncate">
-                            {userInfo.profile?.department || "Chưa cập nhật"}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs">
-                        <div className="w-6 h-6 rounded flex items-center justify-center bg-muted flex-shrink-0 text-muted-foreground">
-                          <Mail size={12} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-muted-foreground text-[10px]">
-                            Email
-                          </p>
-                          <p className="font-medium text-foreground truncate">
-                            {userInfo.email || "-"}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-6 mt-auto">
-                    <div>
-                      <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-2 mb-4">
-                        Nhật ký Truy cập
-                      </h3>
-                      <div className="relative">
-                        <div className="absolute left-1.5 top-2 bottom-2 w-px bg-border z-0" />
-                        <div className="space-y-5 relative z-10">
-                          {userInfo.updatedAt && (
-                            <div className="flex gap-4">
-                              <div className="w-3 h-3 rounded-full bg-background border-2 border-primary mt-1 flex-shrink-0" />
-                              <div>
-                                <h4 className="text-xs font-bold text-foreground leading-tight mb-0.5">
-                                  Thay đổi quyền hạn
-                                </h4>
-                                <p className="text-[10px] text-muted-foreground mb-1">
-                                  {new Date(
-                                    userInfo.updatedAt,
-                                  ).toLocaleDateString("vi-VN")}
-                                </p>
-                              </div>
-                            </div>
-                          )}
-                          {userInfo.createdAt && (
-                            <div className="flex gap-4">
-                              <div className="w-3 h-3 rounded-full bg-background border-2 border-muted-foreground mt-1 flex-shrink-0" />
-                              <div>
-                                <h4 className="text-xs font-bold text-foreground leading-tight mb-0.5">
-                                  Tạo tài khoản
-                                </h4>
-                                <p className="text-[10px] text-muted-foreground mb-1">
-                                  {new Date(
-                                    userInfo.createdAt,
-                                  ).toLocaleDateString("vi-VN")}
-                                </p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            },
-          }}
-          /* ─── RIGHT COLUMN: Access Controls ─── */
-          rightSidebar={{
-            collapsed: rightCollapsed,
-            onCollapseChange: setRightCollapsed,
-            defaultCollapsed: !selectedUserId,
-            content: (collapsed) => {
-              if (collapsed || !selectedUserId) {
-                return (
-                  <div className="flex flex-col items-center py-6 gap-6 text-muted-foreground fade-in h-full">
-                    <div className="relative group cursor-help">
-                      <Shield size={20} />
-                    </div>
-                  </div>
-                );
-              }
-
-              if (detailsFetching && !userDetailsRes?.data) {
-                return (
-                  <div className="flex justify-center items-center h-full text-primary fade-in">
-                    <RefreshCw className="animate-spin" size={24} />
-                  </div>
-                );
-              }
-
-              return (
-                <div className="flex flex-col h-full fade-in">
-                  <DetailAccordion
-                    title="Vai trò Chính (Primary Role)"
-                    icon={<Shield size={14} />}
-                    isExpanded={rightSections.role}
-                    onToggle={() =>
-                      setRightSections((p) => ({ ...p, role: !p.role }))
-                    }
-                  >
-                    <div className="space-y-4 pt-1">
-                      <div className="bg-muted/20 p-3 rounded-lg border border-border/50 flex items-start gap-2.5">
-                        <ShieldAlert
-                          size={14}
-                          className="text-primary mt-0.5 flex-shrink-0"
-                        />
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          Vai trò hệ thống quyết định nhóm quyền cốt lõi. Các
-                          quyền thuộc vai trò này sẽ{" "}
-                          <span className="font-semibold text-foreground">
-                            mặc định được gán
-                          </span>{" "}
-                          và bị mờ ở phần Quyền Mở Rộng.
-                        </p>
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
-                          Áp dụng Vai trò
-                        </label>
-
-                        {/* FIX: Wrapped in div to manage disabled state without TS errors */}
-                        <div
-                          className={
-                            !isEditing
-                              ? "pointer-events-none opacity-60 grayscale transition-all"
-                              : ""
+                      <h2 className="text-base font-bold text-foreground">
+                        {userInfo.fullName}
+                      </h2>
+                      <div className="mt-2">
+                        <Badge
+                          config={
+                            statusConfig[userInfo.status] ||
+                            statusConfig.INACTIVE
                           }
-                        >
-                          <RoleCombobox
-                            availableRoles={availableRoles}
-                            selectedRoleId={selectedRoleId}
-                            onChange={(val: string) => setSelectedRoleId(val)}
-                          />
+                        />
+                      </div>
+
+                      <div className="w-full mt-6 space-y-3 text-left">
+                        <div className="flex items-center gap-3 text-xs">
+                          <div className="w-6 h-6 rounded flex items-center justify-center bg-muted flex-shrink-0 text-muted-foreground">
+                            <Briefcase size={12} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-muted-foreground text-[10px]">
+                              Chức vụ
+                            </p>
+                            <p className="font-semibold text-foreground truncate">
+                              {userInfo.profile?.jobTitle || "Chưa cập nhật"}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs">
+                          <div className="w-6 h-6 rounded flex items-center justify-center bg-muted flex-shrink-0 text-muted-foreground">
+                            <Building2 size={12} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-muted-foreground text-[10px]">
+                              Phòng ban
+                            </p>
+                            <p className="font-semibold text-foreground truncate">
+                              {userInfo.profile?.department || "Chưa cập nhật"}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs">
+                          <div className="w-6 h-6 rounded flex items-center justify-center bg-muted flex-shrink-0 text-muted-foreground">
+                            <Mail size={12} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-muted-foreground text-[10px]">
+                              Email
+                            </p>
+                            <p className="font-medium text-foreground truncate">
+                              {userInfo.email || "-"}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </DetailAccordion>
 
-                  <DetailAccordion
-                    title={`Quyền Mở Rộng (${currentBonusPerms.size})`}
-                    icon={<ShieldAlert size={14} />}
-                    isExpanded={rightSections.bonus}
-                    onToggle={() =>
-                      setRightSections((p) => ({ ...p, bonus: !p.bonus }))
-                    }
-                    className="border-b-0 lg:border-b"
-                  >
-                    <div className="space-y-4 pt-2">
-                      <p className="text-xs text-muted-foreground leading-relaxed mb-4">
-                        Cấp thêm quyền ngoại lệ ngoài vai trò chính. Các quyền
-                        bị mờ là quyền đã có sẵn.
-                      </p>
-                      {matrixData.map((resource: SystemResource) => (
-                        <BonusPermissionGroupCard
-                          key={resource.id}
-                          resource={resource}
-                          currentBonusPerms={currentBonusPerms}
-                          rolePerms={rolePermsSet} // Inherited from dropdown
-                          isEditing={isEditing}
-                          onTogglePerm={toggleBonusPerm}
-                          onToggleGroupAll={toggleGroupAll}
-                        />
-                      ))}
+                    <div className="space-y-6 mt-auto">
+                      <div>
+                        <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-2 mb-4">
+                          Nhật ký Truy cập
+                        </h3>
+                        <div className="relative">
+                          <div className="absolute left-1.5 top-2 bottom-2 w-px bg-border z-0" />
+                          <div className="space-y-5 relative z-10">
+                            {userInfo.updatedAt && (
+                              <div className="flex gap-4">
+                                <div className="w-3 h-3 rounded-full bg-background border-2 border-primary mt-1 flex-shrink-0" />
+                                <div>
+                                  <h4 className="text-xs font-bold text-foreground leading-tight mb-0.5">
+                                    Thay đổi quyền hạn
+                                  </h4>
+                                  <p className="text-[10px] text-muted-foreground mb-1">
+                                    {new Date(
+                                      userInfo.updatedAt,
+                                    ).toLocaleDateString("vi-VN")}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                            {userInfo.createdAt && (
+                              <div className="flex gap-4">
+                                <div className="w-3 h-3 rounded-full bg-background border-2 border-muted-foreground mt-1 flex-shrink-0" />
+                                <div>
+                                  <h4 className="text-xs font-bold text-foreground leading-tight mb-0.5">
+                                    Tạo tài khoản
+                                  </h4>
+                                  <p className="text-[10px] text-muted-foreground mb-1">
+                                    {new Date(
+                                      userInfo.createdAt,
+                                    ).toLocaleDateString("vi-VN")}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </DetailAccordion>
-                </div>
-              );
-            },
-          }}
-          footer={
-            selectedUserId ? (
-              <>
-                <div className="flex items-center gap-2 text-[10px] text-muted-foreground mr-auto hidden sm:flex">
-                  <Clock size={13} /> Cập nhật lần cuối:{" "}
-                  {userInfo?.updatedAt
-                    ? new Date(userInfo.updatedAt).toLocaleDateString("vi-VN")
-                    : "..."}
-                </div>
+                  </div>
+                );
+              },
+            }}
+            rightSidebar={{
+              collapsed: rightCollapsed,
+              onCollapseChange: setRightCollapsed,
+              defaultCollapsed: !selectedUserId,
+              content: (collapsed) => {
+                if (collapsed || !selectedUserId) {
+                  return (
+                    <div className="flex flex-col items-center py-6 gap-6 text-muted-foreground fade-in h-full">
+                      <div className="relative group cursor-help">
+                        <Shield size={20} />
+                      </div>
+                    </div>
+                  );
+                }
 
-                {!isEditing ? (
-                  <>
-                    <button
-                      className="btn-secondary flex items-center justify-center text-xs px-4 h-8 mr-2"
-                      onClick={handleCloseDetail}
-                    >
-                      Đóng
-                    </button>
-                    <button
-                      className="btn-primary flex items-center justify-center gap-2 text-xs px-5 h-8"
-                      onClick={() => setIsEditing(true)}
-                    >
-                      <Edit size={14} /> Chỉnh sửa
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      className="btn-secondary flex items-center justify-center text-xs px-4 h-8"
-                      onClick={handleCancelEdit}
-                    >
-                      Hủy
-                    </button>
+                if (detailsFetching && !userDetailsRes?.data) {
+                  return (
+                    <div className="flex justify-center items-center h-full text-primary fade-in">
+                      <RefreshCw className="animate-spin" size={24} />
+                    </div>
+                  );
+                }
 
-                    <ActionButton
-                      variant="primary"
-                      className="text-xs px-5 !h-8 !py-0 min-w-[140px] justify-center"
-                      isLoading={isUpdating || detailsFetching}
-                      disabled={!hasChanges}
-                      onAction={async () => {
-                        await updateUserAccess({
-                          id: selectedUserId,
-                          roleId: selectedRoleId,
-                          bonusPermissionIds: Array.from(currentBonusPerms),
-                        }).unwrap();
-                        setIsEditing(false);
-                        refetchUsers();
-                        return userInfo?.fullName;
-                      }}
-                      loadingMessage="Đang lưu phân quyền..."
-                      successMessage={(name) =>
-                        `Đã cập nhật quyền cho "${name}"`
+                return (
+                  <div className="flex flex-col h-full fade-in">
+                    <DetailAccordion
+                      title="Vai trò Chính (Primary Role)"
+                      icon={<Shield size={14} />}
+                      isExpanded={rightSections.role}
+                      onToggle={() =>
+                        setRightSections((p) => ({ ...p, role: !p.role }))
                       }
-                      errorMessage="Lỗi khi lưu phân quyền người dùng."
                     >
-                      <Save size={14} /> Lưu thay đổi
-                    </ActionButton>
-                  </>
-                )}
-              </>
-            ) : (
-              <div className="w-full text-center text-xs font-medium text-muted-foreground italic flex items-center justify-center gap-2">
-                <AlertTriangle size={14} className="text-amber-500" />
-                Vui lòng chọn nhân viên để cấu hình quyền
-              </div>
-            )
-          }
-        >
-          {/* ─── CENTER COLUMN: DATA TABLE ─── */}
-          <div className="flex-1 min-h-0 overflow-hidden flex-col hidden md:flex">
+                      <div className="space-y-4 pt-1">
+                        <div className="bg-muted/20 p-3 rounded-lg border border-border/50 flex items-start gap-2.5">
+                          <ShieldAlert
+                            size={14}
+                            className="text-primary mt-0.5 flex-shrink-0"
+                          />
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            Vai trò hệ thống quyết định nhóm quyền cốt lõi. Các
+                            quyền thuộc vai trò này sẽ{" "}
+                            <span className="font-semibold text-foreground">
+                              mặc định được gán
+                            </span>{" "}
+                            và bị mờ ở phần Quyền Mở Rộng.
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+                            Áp dụng Vai trò
+                          </label>
+
+                          <div
+                            className={
+                              !isEditing
+                                ? "pointer-events-none opacity-60 grayscale transition-all"
+                                : ""
+                            }
+                          >
+                            <RoleCombobox
+                              availableRoles={availableRoles}
+                              selectedRoleId={selectedRoleId}
+                              onChange={(val: string) => setSelectedRoleId(val)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </DetailAccordion>
+
+                    <DetailAccordion
+                      title={`Quyền Mở Rộng (${currentBonusPerms.size})`}
+                      icon={<ShieldAlert size={14} />}
+                      isExpanded={rightSections.bonus}
+                      onToggle={() =>
+                        setRightSections((p) => ({ ...p, bonus: !p.bonus }))
+                      }
+                      className="border-b-0 lg:border-b"
+                    >
+                      <div className="space-y-4 pt-2">
+                        <p className="text-xs text-muted-foreground leading-relaxed mb-4">
+                          Cấp thêm quyền ngoại lệ ngoài vai trò chính. Các quyền
+                          bị mờ là quyền đã có sẵn.
+                        </p>
+                        {matrixData.map((resource: SystemResource) => (
+                          <BonusPermissionGroupCard
+                            key={resource.id}
+                            resource={resource}
+                            currentBonusPerms={currentBonusPerms}
+                            rolePerms={rolePermsSet}
+                            isEditing={isEditing}
+                            onTogglePerm={toggleBonusPerm}
+                            onToggleGroupAll={toggleGroupAll}
+                          />
+                        ))}
+                      </div>
+                    </DetailAccordion>
+                  </div>
+                );
+              },
+            }}
+            footer={
+              selectedUserId ? (
+                <>
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground mr-auto">
+                    <Clock size={13} /> Cập nhật lần cuối:{" "}
+                    {userInfo?.updatedAt
+                      ? new Date(userInfo.updatedAt).toLocaleDateString("vi-VN")
+                      : "—"}
+                  </div>
+
+                  {!isEditing ? (
+                    <>
+                      <button
+                        type="button"
+                        className="btn-secondary flex items-center justify-center text-xs px-4 h-8 mr-2 cursor-pointer"
+                        onClick={handleCloseDetail}
+                      >
+                        Đóng
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-primary flex items-center justify-center gap-2 text-xs px-5 h-8 cursor-pointer"
+                        onClick={() => setIsEditing(true)}
+                      >
+                        <Edit size={14} /> Chỉnh sửa
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        className="btn-secondary flex items-center justify-center text-xs px-4 h-8 cursor-pointer"
+                        onClick={handleCancelEdit}
+                      >
+                        Hủy
+                      </button>
+
+                      <ActionButton
+                        variant="primary"
+                        className="text-xs px-5 !h-8 !py-0 min-w-[140px] justify-center cursor-pointer"
+                        isLoading={isUpdating || detailsFetching}
+                        disabled={!hasChanges}
+                        onAction={async () => {
+                          await updateUserAccess({
+                            id: selectedUserId,
+                            roleId: selectedRoleId,
+                            bonusPermissionIds: Array.from(currentBonusPerms),
+                          }).unwrap();
+                          setIsEditing(false);
+                          refetchUsers();
+                          return userInfo?.fullName;
+                        }}
+                        loadingMessage="Đang lưu phân quyền..."
+                        successMessage={(name) =>
+                          `Đã cập nhật quyền cho "${name}"`
+                        }
+                        errorMessage="Lỗi khi lưu phân quyền người dùng."
+                      >
+                        <Save size={14} /> Lưu thay đổi
+                      </ActionButton>
+                    </>
+                  )}
+                </>
+              ) : (
+                <div className="w-full text-center text-xs font-medium text-muted-foreground italic flex items-center justify-center gap-2">
+                  <AlertTriangle size={14} className="text-amber-500" />
+                  Vui lòng chọn nhân viên để cấu hình quyền
+                </div>
+              )
+            }
+          >
             <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
               <DataTable
                 columns={userColumns}
@@ -1096,13 +1101,12 @@ export default function UsersAccessContent() {
                 onPaginationChange={setPagination}
                 isFetching={usersFetching}
                 isLoading={isDataLoading}
-                // isLoading={usersLoading}
                 skeletonRowCount={8}
                 onRowClick={(row) => handleSelectUser(row.original.id)}
               />
             </div>
-          </div>
-        </DetailLayout>
+          </DetailLayout>
+        </div>
       </div>
     </div>
   );

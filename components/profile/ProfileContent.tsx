@@ -494,7 +494,7 @@ export default function ProfileContent() {
   return (
     <>
       <DetailLayout
-        title="Hồ sơ cá nhân"
+        // title="Hồ sơ cá nhân"
         leftSidebar={{
           defaultCollapsed: false,
           content: (collapsed) =>

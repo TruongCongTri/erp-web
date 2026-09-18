@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useDispatch } from "react-redux";
 import type {
@@ -16,7 +17,6 @@ import {
   AlertTriangle,
   Building2,
   Briefcase,
-  Monitor,
   XCircle,
   UserPlus,
   ArrowRight,
@@ -26,8 +26,14 @@ import {
   ArrowUp,
   MapPin,
   Phone,
-  Mail,
   User,
+  Search,
+  SlidersHorizontal,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Check,
+  UserCheck,
 } from "lucide-react";
 import {
   DataTable,
@@ -58,7 +64,7 @@ interface ClaimData {
   email: string;
   fullName: string;
   avatarUrl?: string | null;
-  status: string; // Thực tế: "PENDING_APPROVAL"
+  status: string; // "PENDING_APPROVAL" | "APPROVED" | "REJECTED"
   role?: any | null;
   profile?: {
     id?: string;
@@ -81,8 +87,8 @@ function Badge({
 }) {
   const Icon = config.icon;
   return (
-    <span className={`badge ${config.className}`}>
-      {Icon && <Icon size={12} />}
+    <span className={`badge ${config.className} text-[10px] px-1.5 py-0.5`}>
+      {Icon && <Icon size={11} />}
       {config.label}
     </span>
   );
@@ -107,6 +113,81 @@ const statusConfig: Record<string, any> = {
   },
 };
 
+// ─── Table-Row Styled Mobile Item ────────────────────────────────────────────
+function MobileClaimRow({
+  claim,
+  isSelected,
+  onSelect,
+}: {
+  claim: ClaimData;
+  isSelected: boolean;
+  onSelect: (claim: ClaimData) => void;
+}) {
+  const config = statusConfig[claim.status] || statusConfig.PENDING_APPROVAL;
+
+  const targetCode = claim.profile?.employeeCode;
+  const targetDept = claim.profile?.department;
+
+  return (
+    <div
+      onClick={() => onSelect(claim)}
+      className={`flex items-center justify-between py-2.5 px-3 border-b border-border/60 hover:bg-muted/20 active:bg-muted/40 transition-colors cursor-pointer group text-xs select-none ${
+        isSelected ? "bg-primary/5 border-l-2 border-l-primary" : ""
+      }`}
+    >
+      <div className="flex items-center gap-2.5 min-w-0 pr-2 flex-1">
+        <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+          {(claim.fullName || "U").slice(0, 2).toUpperCase()}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+            <p className="font-semibold text-foreground text-xs truncate">
+              {claim.fullName}
+            </p>
+            <Badge config={config} />
+          </div>
+
+          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground truncate">
+            {targetCode ? (
+              <>
+                <span className="font-mono text-primary font-bold">
+                  {targetCode}
+                </span>
+                <span>•</span>
+                <span className="truncate max-w-[130px]">
+                  {targetDept || "Chưa gán ban"}
+                </span>
+              </>
+            ) : (
+              <span className="italic text-amber-600">Chưa gắn mã NV</span>
+            )}
+            <span>•</span>
+            <span className="font-mono">
+              {claim.createdAt
+                ? new Date(claim.createdAt).toLocaleDateString("vi-VN")
+                : "—"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div
+        className="flex items-center gap-1 shrink-0"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={() => onSelect(claim)}
+          className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+          title="Kiểm duyệt yêu cầu"
+        >
+          <Eye size={15} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Content Component ────────────────────────────────────────────────────
 export default function PendingClaimsContent() {
   const router = useRouter();
@@ -115,14 +196,19 @@ export default function PendingClaimsContent() {
   const dispatch = useDispatch<any>();
 
   const [globalFilter, setGlobalFilter] = useState(searchParams.get("q") || "");
+  const [statusFilter, setStatusFilter] = useState<string[]>(
+    searchParams.get("status")?.split(",").filter(Boolean) || [],
+  );
   const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: parseInt(searchParams.get("page") || "1", 10) - 1,
+    pageIndex: Math.max(0, parseInt(searchParams.get("page") || "1", 10) - 1),
     pageSize: parseInt(searchParams.get("limit") || "10", 10),
   });
 
   const [selectedClaimId, setSelectedClaimId] = useState<string | null>(
     searchParams.get("id") || null,
   );
+  const [showMobileFilter, setShowMobileFilter] = useState(false);
+  const [showMobileReviewModal, setShowMobileReviewModal] = useState(false);
 
   // ─── 1. RTK QUERY: FETCH LIST ───
   const {
@@ -182,18 +268,24 @@ export default function PendingClaimsContent() {
 
   // URL Sync
   useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams();
     if (globalFilter) params.set("q", globalFilter);
+    if (statusFilter.length) params.set("status", statusFilter.join(","));
     if (pagination.pageIndex > 0)
       params.set("page", (pagination.pageIndex + 1).toString());
     if (pagination.pageSize !== 10)
       params.set("limit", pagination.pageSize.toString());
-
     if (selectedClaimId) params.set("id", selectedClaimId);
-    else params.delete("id");
 
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [globalFilter, pagination, selectedClaimId, pathname, router]);
+  }, [
+    globalFilter,
+    statusFilter,
+    pagination,
+    selectedClaimId,
+    pathname,
+    router,
+  ]);
 
   const handleFilterChange = (
     setter: React.Dispatch<React.SetStateAction<any>>,
@@ -203,21 +295,22 @@ export default function PendingClaimsContent() {
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
   };
 
-  const handleSelectClaim = useCallback(
-    (id: string) => {
-      if (selectedClaimId !== id) {
-        setSelectedClaimId(id);
-        setLeftCollapsed(false);
-        setRightCollapsed(false);
-      }
-    },
-    [selectedClaimId],
-  );
+  const handleSelectClaim = useCallback((id: string) => {
+    setSelectedClaimId(id);
+    setLeftCollapsed(false);
+    setRightCollapsed(false);
+  }, []);
+
+  const handleMobileSelectClaim = (claim: ClaimData) => {
+    handleSelectClaim(claim.id);
+    setShowMobileReviewModal(true);
+  };
 
   const handleCloseDetail = useCallback(() => {
     setSelectedClaimId(null);
     setLeftCollapsed(true);
     setRightCollapsed(true);
+    setShowMobileReviewModal(false);
   }, []);
 
   // ─── ACTIONS ───
@@ -226,9 +319,11 @@ export default function PendingClaimsContent() {
     try {
       await approveClaim(selectedClaimId).unwrap();
       handleCloseDetail();
-      return "Phê duyệt thành công. Tài khoản đã liên kết với hồ sơ.";
+      gooeyToast.success(
+        "Phê duyệt thành công. Tài khoản đã liên kết với hồ sơ.",
+      );
     } catch (error: any) {
-      throw new Error(error?.data?.message || "Lỗi khi phê duyệt yêu cầu.");
+      gooeyToast.error(error?.data?.message || "Lỗi khi phê duyệt yêu cầu.");
     }
   }, [approveClaim, selectedClaimId, handleCloseDetail]);
 
@@ -237,9 +332,9 @@ export default function PendingClaimsContent() {
       try {
         await rejectClaim(id).unwrap();
         if (selectedClaimId === id) handleCloseDetail();
-        return "Đã từ chối yêu cầu nhận hồ sơ.";
+        gooeyToast.info("Đã từ chối yêu cầu nhận hồ sơ.");
       } catch (error: any) {
-        throw new Error(error?.data?.message || "Lỗi khi từ chối yêu cầu.");
+        gooeyToast.error(error?.data?.message || "Lỗi khi từ chối yêu cầu.");
       }
     },
     [rejectClaim, selectedClaimId, handleCloseDetail],
@@ -291,7 +386,9 @@ export default function PendingClaimsContent() {
               </div>
               <div className="min-w-0">
                 <p
-                  className={`text-xs font-bold truncate transition-colors ${isSelected ? "text-primary" : "text-foreground"}`}
+                  className={`text-xs font-bold truncate transition-colors ${
+                    isSelected ? "text-primary" : "text-foreground"
+                  }`}
                 >
                   {name}
                 </p>
@@ -340,11 +437,14 @@ export default function PendingClaimsContent() {
         header: ({ column }: any) => (
           <SortHeader column={column}>Thời gian gửi</SortHeader>
         ),
-        cell: ({ getValue }: any) => (
-          <span className="text-xs text-muted-foreground tabular-nums">
-            {new Date(getValue() as string).toLocaleString("vi-VN")}
-          </span>
-        ),
+        cell: ({ getValue }: any) => {
+          const val = getValue() as string;
+          return (
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {val ? new Date(val).toLocaleString("vi-VN") : "—"}
+            </span>
+          );
+        },
       },
       {
         accessorKey: "status",
@@ -375,8 +475,9 @@ export default function PendingClaimsContent() {
               onClick={(e: any) => e.stopPropagation()}
             >
               <button
+                type="button"
                 onClick={() => handleSelectClaim(row.original.id)}
-                className={`p-1.5 rounded transition-colors ${
+                className={`p-1.5 rounded transition-colors cursor-pointer ${
                   isViewing
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "hover:bg-blue-50 text-muted-foreground hover:text-blue-600"
@@ -390,7 +491,7 @@ export default function PendingClaimsContent() {
                 iconOnly
                 variant="ghost"
                 tooltip="Từ chối"
-                className="!w-7 !h-7 !p-0 hover:bg-red-50 hover:text-red-600 text-muted-foreground"
+                className="!w-7 !h-7 !p-0 hover:bg-red-50 hover:text-red-600 text-muted-foreground cursor-pointer"
                 requireConfirm
                 confirmTitle="Từ chối yêu cầu?"
                 confirmMessage={`Xác nhận từ chối yêu cầu nhận hồ sơ của "${row.original.fullName}"?`}
@@ -410,81 +511,187 @@ export default function PendingClaimsContent() {
     [selectedClaimId, handleSelectClaim, handleReject],
   );
 
+  const statusFilterOptions = [
+    { value: "PENDING_APPROVAL", label: "Chờ duyệt" },
+    { value: "APPROVED", label: "Đã phê duyệt" },
+    { value: "REJECTED", label: "Đã từ chối" },
+  ];
+
   return (
     <div className="flex flex-col h-full bg-background overflow-hidden relative">
-      {/* ─── THE TWITTER-STYLE FLOATING BADGE ─── */}
+      {/* ── Floating Notification Badge ── */}
       {newClaimsCount > 0 && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-top-4 fade-in duration-300">
           <button
+            type="button"
             onClick={handleRefreshClick}
-            className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full shadow-lg hover:bg-primary/90 hover:shadow-primary/20 transition-all font-bold text-xs"
+            className="flex items-center gap-2 bg-primary text-primary-foreground px-4 sm:px-5 py-2 sm:py-2.5 rounded-full shadow-lg hover:bg-primary/90 transition-all font-bold text-xs cursor-pointer"
           >
-            <ArrowUp size={14} className="animate-bounce" />
-            Có {newClaimsCount} yêu cầu mới. Nhấn để làm mới.
+            <ArrowUp size={14} className="animate-bounce shrink-0" />
+            <span>Có {newClaimsCount} yêu cầu mới. Nhấn để làm mới.</span>
           </button>
         </div>
       )}
 
-      <div className="flex lg:hidden flex-1 items-center justify-center px-6">
-        <div className="text-center max-w-xs bg-card p-6 rounded-2xl border border-border shadow-sm">
-          <Monitor size={40} className="text-primary/40 mx-auto mb-4" />
-          <h2 className="text-sm font-bold text-foreground mb-2">
-            Tính năng tối ưu cho Desktop
-          </h2>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            Kiểm duyệt hồ sơ yêu cầu không gian hiển thị rộng. Vui lòng sử dụng
-            máy tính để trải nghiệm.
-          </p>
-        </div>
-      </div>
-
       {/* ── Global Header ── */}
-      <div className="flex-shrink-0 px-4 md:px-5 py-4 border-b border-border bg-card z-10 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+      <div className="flex-shrink-0 px-4 md:px-5 py-3 border-b border-border bg-card z-10 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <h1 className="text-base md:text-lg font-bold text-foreground flex items-center gap-2">
               Kiểm duyệt Yêu cầu nhận hồ sơ
             </h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Quản lý và xác minh danh tính người dùng liên kết với hồ sơ nhân
-              sự
+              {totalRows} yêu cầu · Quản lý và xác minh liên kết hồ sơ nhân sự
             </p>
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <ActionButton
               variant="ghost"
-              className="hidden sm:flex !h-8 !px-3 !text-xs !font-medium"
+              className="!h-8 !px-2 sm:!px-3 !text-xs !font-medium cursor-pointer"
               isLoading={isFetching}
               onAction={async () => {
                 await new Promise((r) => setTimeout(r, 1200));
                 return "Danh_sach_Yeu_cau.xlsx";
               }}
-              loadingMessage="Đang chuẩn bị dữ liệu xuất..."
+              loadingMessage="Đang xuất file..."
               successMessage={(file) => `Đã tải xuống ${file}`}
+              title="Xuất Excel"
             >
-              <Download size={13} /> Xuất Excel
+              <Download size={13} className="shrink-0" />
+              <span className="hidden sm:inline">Xuất Excel</span>
             </ActionButton>
 
             <ActionButton
               variant="secondary"
-              className="hidden sm:flex !h-8 !px-3 !text-xs !font-medium"
+              className="!h-8 !px-2 sm:!px-3 !text-xs !font-medium cursor-pointer"
               isLoading={isFetching}
               onAction={async () => handleRefreshClick()}
+              title="Làm mới"
             >
               <RefreshCw
                 size={13}
-                className={isFetching ? "animate-spin" : ""}
+                className={`shrink-0 ${isFetching ? "animate-spin" : ""}`}
               />
-              Làm mới
+              <span className="hidden sm:inline">Làm mới</span>
             </ActionButton>
           </div>
         </div>
       </div>
 
-      {/* ── 3-Column Architecture ── */}
-      <div className="flex-1 min-h-0 relative">
+      {/* ── MOBILE LIST VIEW (< md) ── */}
+      <div className="flex-1 min-h-0 flex flex-col md:hidden overflow-hidden">
+        {/* Mobile Search & Filter Trigger */}
+        <div className="p-3 border-b border-border bg-card flex items-center gap-2 shrink-0">
+          <div className="relative flex-1">
+            <Search
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+            />
+            <input
+              type="text"
+              value={globalFilter}
+              onChange={(e) =>
+                handleFilterChange(setGlobalFilter, e.target.value)
+              }
+              placeholder="Tìm theo tên, email..."
+              className="input-base pl-9 pr-7 py-1 text-xs w-full h-8"
+            />
+            {globalFilter && (
+              <button
+                type="button"
+                onClick={() => handleFilterChange(setGlobalFilter, "")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground cursor-pointer"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowMobileFilter(true)}
+            className={`h-8 px-2.5 rounded-lg border flex items-center justify-center gap-1.5 text-xs transition-colors shrink-0 cursor-pointer ${
+              statusFilter.length > 0
+                ? "bg-primary/10 border-primary text-primary font-semibold"
+                : "border-border bg-background text-muted-foreground hover:bg-muted"
+            }`}
+            title="Lọc trạng thái"
+          >
+            <SlidersHorizontal size={13} />
+            {statusFilter.length > 0 && (
+              <span className="w-4 h-4 rounded-full bg-primary text-white font-mono text-[9px] flex items-center justify-center">
+                {statusFilter.length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Mobile Rows List */}
+        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar divide-y divide-border/40">
+          {claimsData.length === 0 && !isFetching ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
+              <UserPlus size={28} className="text-muted-foreground/30" />
+              <p className="text-xs font-semibold text-muted-foreground">
+                Không có yêu cầu nhận hồ sơ nào
+              </p>
+            </div>
+          ) : (
+            claimsData.map((claim) => (
+              <MobileClaimRow
+                key={claim.id}
+                claim={claim}
+                isSelected={claim.id === selectedClaimId}
+                onSelect={handleMobileSelectClaim}
+              />
+            ))
+          )}
+        </div>
+
+        {/* Docked Mobile Bottom Pagination */}
+        <div className="shrink-0 flex items-center justify-between px-4 py-2 border-t border-border bg-card text-xs text-muted-foreground">
+          <span className="font-mono text-[11px]">
+            {pagination.pageIndex * pagination.pageSize + 1}-
+            {Math.min(
+              (pagination.pageIndex + 1) * pagination.pageSize,
+              totalRows,
+            )}{" "}
+            / {totalRows}
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              disabled={pagination.pageIndex === 0 || isFetching}
+              onClick={() =>
+                setPagination((p) => ({ ...p, pageIndex: p.pageIndex - 1 }))
+              }
+              className="p-1.5 rounded-md border border-border bg-background hover:bg-muted disabled:opacity-40 cursor-pointer"
+              title="Trang trước"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <span className="font-mono text-[11px] px-1 font-semibold text-foreground">
+              {pagination.pageIndex + 1}/{pageCount || 1}
+            </span>
+            <button
+              type="button"
+              disabled={pagination.pageIndex >= pageCount - 1 || isFetching}
+              onClick={() =>
+                setPagination((p) => ({ ...p, pageIndex: p.pageIndex + 1 }))
+              }
+              className="p-1.5 rounded-md border border-border bg-background hover:bg-muted disabled:opacity-40 cursor-pointer"
+              title="Trang sau"
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── DESKTOP 3-COLUMN ARCHITECTURE (md:) ── */}
+      <div className="flex-1 min-h-0 relative hidden md:block">
         <DetailLayout
-          title="Chi tiết Yêu cầu"
+          // title="Chi tiết Yêu cầu"
           /* ── LEFT COLUMN: Context (Account vs Claim) ── */
           leftSidebar={{
             collapsed: leftCollapsed,
@@ -530,7 +737,7 @@ export default function PendingClaimsContent() {
                   </div>
 
                   <div className="flex justify-center text-muted-foreground/50">
-                    <ArrowRight size={20} className="rotate-90 sm:rotate-0" />
+                    <ArrowRight size={20} />
                   </div>
 
                   {/* Target Profile Target Info */}
@@ -597,7 +804,6 @@ export default function PendingClaimsContent() {
 
               return (
                 <div className="flex flex-col h-full fade-in">
-                  {/* System Profile Details Fetch */}
                   <DetailAccordion
                     title="Đối chiếu Dữ liệu gốc (Hệ thống)"
                     icon={<Building2 size={14} />}
@@ -621,8 +827,7 @@ export default function PendingClaimsContent() {
                         <div className="space-y-3">
                           <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
                             <p className="text-xs text-emerald-800 leading-relaxed font-medium">
-                              Đây là dữ liệu chính thức đang lưu trong hệ thống
-                              nhân sự cho mã{" "}
+                              Dữ liệu chính thức cho mã{" "}
                               <strong>{targetProfile.employeeCode}</strong>.
                             </p>
                           </div>
@@ -649,7 +854,7 @@ export default function PendingClaimsContent() {
                               />
                               <div className="flex-1 min-w-0">
                                 <p className="text-[10px] text-muted-foreground uppercase font-bold">
-                                  Phòng ban & Chức vụ
+                                  Phòng ban &amp; Chức vụ
                                 </p>
                                 <p className="text-xs font-medium text-foreground truncate">
                                   {targetProfile.department} ·{" "}
@@ -691,7 +896,7 @@ export default function PendingClaimsContent() {
                         <div className="text-center py-6 text-muted-foreground">
                           <AlertTriangle
                             size={24}
-                            className="mx-auto mb-2 opacity-50"
+                            className="mx-auto mb-2 opacity-50 text-amber-500"
                           />
                           <p className="text-xs font-medium">
                             Hồ sơ này không tồn tại hoặc đã bị xóa
@@ -732,52 +937,6 @@ export default function PendingClaimsContent() {
                       </div>
                     </div>
                   </DetailAccordion>
-
-                  <DetailAccordion
-                    title="Lịch sử yêu cầu"
-                    icon={<Clock size={14} />}
-                    isExpanded={rightSections.history}
-                    onToggle={() =>
-                      setRightSections((p) => ({ ...p, history: !p.history }))
-                    }
-                    className="border-b-0 lg:border-b"
-                  >
-                    <div className="relative pt-2">
-                      <div className="absolute left-1.5 top-2 bottom-2 w-px bg-border z-0" />
-                      <div className="space-y-5 relative z-10">
-                        <div className="flex gap-4">
-                          <div className="w-3 h-3 rounded-full bg-background border-2 border-primary mt-1 flex-shrink-0" />
-                          <div>
-                            <h4 className="text-xs font-bold text-foreground leading-tight mb-0.5">
-                              Tài khoản được tạo
-                            </h4>
-                            <p className="text-[10px] text-muted-foreground">
-                              {new Date(selectedClaim.createdAt).toLocaleString(
-                                "vi-VN",
-                              )}
-                            </p>
-                          </div>
-                        </div>
-                        {selectedClaim.updatedAt &&
-                          selectedClaim.updatedAt !==
-                            selectedClaim.createdAt && (
-                            <div className="flex gap-4">
-                              <div className="w-3 h-3 rounded-full bg-background border-2 border-amber-500 mt-1 flex-shrink-0" />
-                              <div>
-                                <h4 className="text-xs font-bold text-foreground leading-tight mb-0.5">
-                                  Cập nhật lần cuối
-                                </h4>
-                                <p className="text-[10px] text-muted-foreground">
-                                  {new Date(
-                                    selectedClaim.updatedAt,
-                                  ).toLocaleString("vi-VN")}
-                                </p>
-                              </div>
-                            </div>
-                          )}
-                      </div>
-                    </div>
-                  </DetailAccordion>
                 </div>
               );
             },
@@ -787,7 +946,7 @@ export default function PendingClaimsContent() {
               <div className="flex gap-2 w-full">
                 <ActionButton
                   variant="outline"
-                  className="flex-1 border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-xs py-2"
+                  className="flex-1 border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-xs py-2 cursor-pointer"
                   requireConfirm
                   confirmTitle="Từ chối yêu cầu?"
                   confirmMessage="Yêu cầu này sẽ bị từ chối. Tài khoản của nhân sự sẽ không được duyệt."
@@ -800,10 +959,10 @@ export default function PendingClaimsContent() {
 
                 <ActionButton
                   variant="primary"
-                  className="flex-1 text-xs py-2"
+                  className="flex-1 text-xs py-2 cursor-pointer"
                   requireConfirm
                   confirmTitle="Phê duyệt liên kết?"
-                  confirmMessage={`Tài khoản này sẽ được liên kết và kế thừa mọi dữ liệu của hồ sơ hệ thống. Xác nhận?`}
+                  confirmMessage="Tài khoản này sẽ được liên kết và kế thừa mọi dữ liệu của hồ sơ hệ thống. Xác nhận?"
                   confirmLabel="Phê duyệt"
                   onAction={handleApproveSubmit}
                   successMessage={(msg) => msg}
@@ -820,28 +979,247 @@ export default function PendingClaimsContent() {
           }
         >
           {/* ─── CENTER COLUMN: DATA TABLE ─── */}
-          <div className="flex-1 min-h-0 overflow-hidden flex-col hidden md:flex">
-            <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-              <DataTable
-                columns={columns}
-                data={claimsData}
-                pageCount={pageCount}
-                totalRows={totalRows}
-                globalFilter={globalFilter}
-                onGlobalFilterChange={(v) =>
-                  handleFilterChange(setGlobalFilter, v)
-                }
-                pagination={pagination}
-                onPaginationChange={setPagination}
-                isLoading={isFetching}
-                skeletonRowCount={8}
-                onRowClick={(row) => handleSelectClaim(row.original.id)}
-                enableMultiRowSelection={true}
-              />
-            </div>
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+            <DataTable
+              columns={columns}
+              data={claimsData}
+              pageCount={pageCount}
+              totalRows={totalRows}
+              globalFilter={globalFilter}
+              onGlobalFilterChange={(v) =>
+                handleFilterChange(setGlobalFilter, v)
+              }
+              pagination={pagination}
+              onPaginationChange={setPagination}
+              isLoading={isFetching}
+              skeletonRowCount={8}
+              onRowClick={(row) => handleSelectClaim(row.original.id)}
+              enableMultiRowSelection={true}
+            />
           </div>
         </DetailLayout>
       </div>
+
+      {/* ── MOBILE QUICK REVIEW & ACTION SHEET ── */}
+      {showMobileReviewModal && selectedClaim && (
+        <div className="fixed inset-0 z-[1000] flex flex-col justify-end bg-black/50 backdrop-blur-xs md:hidden animate-in fade-in duration-200">
+          <div
+            className="w-full bg-card rounded-t-2xl border-t border-border p-4 max-h-[85vh] flex flex-col gap-4 shadow-2xl animate-in slide-in-from-bottom duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Sheet Header */}
+            <div className="flex items-center justify-between pb-2 border-b border-border shrink-0">
+              <div className="flex items-center gap-2">
+                <UserCheck size={16} className="text-primary" />
+                <h3 className="font-bold text-sm text-foreground">
+                  Xác minh &amp; Duyệt Hồ sơ
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMobileReviewModal(false)}
+                className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Sheet Content: Diff Comparison */}
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1 text-xs custom-scrollbar">
+              {/* Account Box */}
+              <div className="bg-muted/20 border border-border rounded-xl p-3">
+                <p className="text-[10px] font-bold uppercase text-muted-foreground mb-1.5 flex items-center gap-1">
+                  <User size={11} /> Tài khoản đăng ký
+                </p>
+                <p className="font-bold text-xs text-foreground">
+                  {selectedClaim.fullName}
+                </p>
+                <p className="text-[11px] text-muted-foreground font-mono mt-0.5">
+                  {selectedClaim.email}
+                </p>
+              </div>
+
+              {/* Target Profile Box */}
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-3">
+                <p className="text-[10px] font-bold uppercase text-primary mb-1.5 flex items-center gap-1">
+                  <Briefcase size={11} /> Hồ sơ yêu cầu nhận
+                </p>
+                {selectedClaim.profile ? (
+                  <div className="space-y-1">
+                    <p className="font-bold text-xs text-foreground">
+                      {selectedClaim.profile.fullName || selectedClaim.fullName}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Mã:{" "}
+                      <strong className="font-mono text-primary">
+                        {selectedClaim.profile.employeeCode}
+                      </strong>{" "}
+                      · {selectedClaim.profile.department}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-amber-600 italic text-[11px]">
+                    Chưa gắn mã hồ sơ nhân viên
+                  </p>
+                )}
+              </div>
+
+              {/* System Profile Details If Exists */}
+              {targetProfile && (
+                <div className="bg-muted/10 border border-border/80 rounded-xl p-3 space-y-2">
+                  <p className="text-[10px] font-bold uppercase text-muted-foreground">
+                    Dữ liệu hệ thống gốc ({targetProfile.employeeCode})
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div>
+                      <span className="text-muted-foreground block text-[10px]">
+                        Chức danh
+                      </span>
+                      <span className="font-medium text-foreground truncate block">
+                        {targetProfile.jobTitle || "—"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[10px]">
+                        Điện thoại
+                      </span>
+                      <span className="font-mono text-foreground truncate block">
+                        {targetProfile.phoneNumber || "—"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Evidence Document */}
+              <div className="p-3 bg-muted/20 border border-dashed border-border rounded-xl flex items-center justify-between">
+                <div className="flex items-center gap-2 min-w-0">
+                  <FileText size={16} className="text-primary shrink-0" />
+                  <span className="text-[11px] font-medium truncate">
+                    {selectedClaim.evidenceUrl
+                      ? "Bản chụp CCCD đính kèm"
+                      : "Không có tài liệu đính kèm"}
+                  </span>
+                </div>
+                {selectedClaim.evidenceUrl && (
+                  <a
+                    href={selectedClaim.evidenceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] text-primary hover:underline shrink-0 font-semibold"
+                  >
+                    Xem file
+                  </a>
+                )}
+              </div>
+            </div>
+
+            {/* Direct Approve / Reject Footer Actions */}
+            <div className="flex items-center gap-2 pt-2 border-t border-border shrink-0">
+              <ActionButton
+                variant="outline"
+                className="flex-1 border-red-200 bg-red-50 text-red-700 hover:bg-red-100 text-xs h-9 cursor-pointer"
+                requireConfirm
+                confirmTitle="Từ chối yêu cầu?"
+                confirmMessage={`Xác nhận từ chối yêu cầu nhận hồ sơ của "${selectedClaim.fullName}"?`}
+                confirmLabel="Từ chối"
+                onAction={() => handleReject(selectedClaim.id)}
+                successMessage={(msg) => msg}
+              >
+                <XCircle size={14} className="mr-1.5" /> Từ chối
+              </ActionButton>
+
+              <ActionButton
+                variant="primary"
+                className="flex-1 text-xs h-9 cursor-pointer"
+                requireConfirm
+                confirmTitle="Phê duyệt liên kết?"
+                confirmMessage="Tài khoản này sẽ được liên kết với hồ sơ hệ thống. Xác nhận?"
+                confirmLabel="Phê duyệt"
+                onAction={handleApproveSubmit}
+                successMessage={(msg) => msg}
+              >
+                <ShieldCheck size={14} className="mr-1.5" /> Phê duyệt
+              </ActionButton>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MOBILE FILTER DRAWER ── */}
+      {showMobileFilter && (
+        <div className="fixed inset-0 z-[1000] flex flex-col justify-end bg-black/50 backdrop-blur-xs md:hidden animate-in fade-in duration-200">
+          <div
+            className="w-full bg-card rounded-t-2xl border-t border-border p-4 max-h-[70vh] flex flex-col gap-4 shadow-2xl animate-in slide-in-from-bottom duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-border">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal size={16} className="text-primary" />
+                <h3 className="font-bold text-sm text-foreground">
+                  Lọc Trạng Thái
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMobileFilter(false)}
+                className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-3 text-xs">
+              <div className="flex flex-wrap gap-2">
+                {statusFilterOptions.map((opt) => {
+                  const isSelected = statusFilter.includes(opt.value);
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        const next = isSelected
+                          ? statusFilter.filter((v) => v !== opt.value)
+                          : [opt.value];
+                        handleFilterChange(setStatusFilter, next);
+                      }}
+                      className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
+                        isSelected
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-muted/40 border-border text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2 border-t border-border">
+              {statusFilter.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter([]);
+                    setPagination((p) => ({ ...p, pageIndex: 0 }));
+                  }}
+                  className="btn-secondary text-xs h-9 px-3 text-red-600 cursor-pointer"
+                >
+                  Xóa lọc
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowMobileFilter(false)}
+                className="btn-primary text-xs h-9 flex-1 cursor-pointer"
+              >
+                Áp dụng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

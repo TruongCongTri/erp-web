@@ -149,7 +149,7 @@ export const authApiSlice = createApi({
     changePassword: builder.mutation<MetaResponse, ChangePasswordRequest>({
       query: (body) => ({
         url: "/auth/change-password",
-        method: "POST",
+        method: "PATCH",
         body,
       }),
     }),

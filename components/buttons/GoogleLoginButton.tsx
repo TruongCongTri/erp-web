@@ -6,6 +6,10 @@ import { toast } from "sonner";
 import { useRouter } from "@/i18n/routing";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
+import { gooeyToast } from "@/components/ui/goey-toaster";
+
+// Google login is not available yet — the button is shown as disabled.
+const GOOGLE_LOGIN_ENABLED = false;
 
 export default function GoogleLoginButton() {
   const router = useRouter();
@@ -47,12 +51,21 @@ export default function GoogleLoginButton() {
     },
   });
 
+  const handleClick = () => {
+    if (!GOOGLE_LOGIN_ENABLED) {
+      gooeyToast.info("future implement");
+      return;
+    }
+    loginWithGoogle();
+  };
+
   return (
     <button
       type="button"
-      onClick={() => loginWithGoogle()}
+      onClick={handleClick}
       disabled={isLoading}
-      className="w-full flex items-center justify-center gap-3 bg-white dark:bg-muted border border-border text-foreground py-3 rounded-xl font-bold text-sm hover:bg-gray-50 dark:hover:bg-muted/80 transition-all shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+      aria-disabled={!GOOGLE_LOGIN_ENABLED || isLoading}
+      className="w-full flex items-center justify-center gap-3 bg-white dark:bg-muted border border-border text-foreground py-3 rounded-xl font-bold text-sm hover:bg-gray-50 dark:hover:bg-muted/80 transition-all shadow-sm disabled:opacity-70 disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:hover:bg-white dark:aria-disabled:hover:bg-muted"
     >
       {isLoading ? (
         <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />

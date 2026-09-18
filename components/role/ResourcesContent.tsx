@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import type {
   ColumnDef,
@@ -25,6 +26,7 @@ import {
   AlertTriangle,
   Download,
   Save,
+  ChevronLeft,
 } from "lucide-react";
 import { gooeyToast } from "@/components/ui/goey-toaster";
 
@@ -40,7 +42,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   useGetResourcesQuery,
   useGetResourceDetailsQuery,
-  useGetResourcesMatrixQuery,
   useCreateResourceMutation,
   useUpdateResourceMutation,
   useToggleResourceStatusMutation,
@@ -107,7 +108,6 @@ function CreateResourceModal({
     if (isOpen && availableScopes.length > 0 && selectedScopes.length === 0) {
       setSelectedScopes(availableScopes);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, enumsLoading]);
 
   useEffect(() => {
@@ -168,7 +168,7 @@ function CreateResourceModal({
       gooeyToast.success("Đã tạo tài nguyên hệ thống thành công!");
       onSuccess();
       onClose();
-    } catch (error) {
+    } catch {
       gooeyToast.error("Lỗi khi tạo tài nguyên");
     }
   };
@@ -188,8 +188,9 @@ function CreateResourceModal({
             </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 text-muted-foreground hover:bg-muted rounded-md transition-colors"
+            className="p-1.5 text-muted-foreground hover:bg-muted rounded-md transition-colors cursor-pointer"
           >
             <X size={16} />
           </button>
@@ -293,7 +294,7 @@ function CreateResourceModal({
                           key={action}
                           type="button"
                           onClick={() => toggleAction(action)}
-                          className={`px-2.5 py-1.5 text-[11px] uppercase font-medium rounded-md border transition-colors ${
+                          className={`px-2.5 py-1.5 text-[11px] uppercase font-medium rounded-md border transition-colors cursor-pointer ${
                             selectedActions.includes(action)
                               ? "bg-primary text-primary-foreground border-primary"
                               : "bg-background text-muted-foreground border-border hover:bg-muted"
@@ -316,7 +317,7 @@ function CreateResourceModal({
                           key={scope}
                           type="button"
                           onClick={() => toggleScope(scope)}
-                          className={`px-2.5 py-1.5 text-[11px] uppercase font-medium rounded-md border transition-colors ${
+                          className={`px-2.5 py-1.5 text-[11px] uppercase font-medium rounded-md border transition-colors cursor-pointer ${
                             selectedScopes.includes(scope)
                               ? "bg-primary text-primary-foreground border-primary"
                               : "bg-background text-muted-foreground border-border hover:bg-muted"
@@ -357,7 +358,7 @@ function CreateResourceModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+            className="px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           >
             Hủy
           </button>
@@ -394,7 +395,6 @@ export default function ResourcesContent() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [permSearch, setPermSearch] = useState("");
 
-  // Track ID instead of full object for deep-linking & performance
   const [selectedResourceId, setSelectedResourceId] = useState<string | null>(
     searchParams.get("id") || null,
   );
@@ -419,7 +419,6 @@ export default function ResourcesContent() {
     search: globalFilter,
   });
 
-  // Fetch full details of the selected resource including its full permissions array
   const { data: resourceDetailsRes, isFetching: detailsFetching } =
     useGetResourceDetailsQuery(selectedResourceId ?? "", {
       skip: !selectedResourceId,
@@ -466,7 +465,6 @@ export default function ResourcesContent() {
     ? 1
     : resourcesRes?.meta?.pagination?.total_page || 1;
 
-  // Use the detailed API response if available, otherwise fallback to table data while loading
   const resourceInfo = useMemo(() => {
     if (!selectedResourceId) return null;
     return (
@@ -476,7 +474,6 @@ export default function ResourcesContent() {
     );
   }, [selectedResourceId, resourcesData, resourceDetailsRes]);
 
-  // Sync Edit Form with Data (Render Phase Sync để tránh Cascading Renders)
   const [prevResourceInfo, setPrevResourceInfo] = useState<any>(null);
   if (resourceInfo !== prevResourceInfo) {
     setPrevResourceInfo(resourceInfo);
@@ -519,7 +516,7 @@ export default function ResourcesContent() {
         setPermSearch("");
         setLeftCollapsed(false);
         setRightCollapsed(false);
-        setIsEditing(false); // Reset edit mode on selection change
+        setIsEditing(false);
       }
     },
     [selectedResourceId],
@@ -586,7 +583,9 @@ export default function ResourcesContent() {
               </div>
               <div className="min-w-0">
                 <p
-                  className={`text-xs font-bold truncate transition-colors ${isSelected ? "text-primary" : "text-foreground"}`}
+                  className={`text-xs font-bold truncate transition-colors ${
+                    isSelected ? "text-primary" : "text-foreground"
+                  }`}
                 >
                   {row.original.name}
                 </p>
@@ -652,7 +651,9 @@ export default function ResourcesContent() {
                 confirmTitle={
                   row.original.isLive ? "Tắt phân hệ?" : "Kích hoạt phân hệ?"
                 }
-                confirmMessage={`Bạn có chắc chắn muốn ${row.original.isLive ? "tắt" : "bật"} trạng thái hoạt động của phân hệ "${row.original.name}"?`}
+                confirmMessage={`Bạn có chắc chắn muốn ${
+                  row.original.isLive ? "tắt" : "bật"
+                } trạng thái hoạt động của phân hệ "${row.original.name}"?`}
                 confirmLabel="Xác nhận"
                 onAction={async (newChecked) => {
                   await toggleResourceStatus({
@@ -685,8 +686,9 @@ export default function ResourcesContent() {
               onClick={(e: any) => e.stopPropagation()}
             >
               <button
+                type="button"
                 onClick={() => handleSelectResource(row.original.id)}
-                className={`p-1.5 rounded transition-colors ${
+                className={`p-1.5 rounded transition-colors cursor-pointer ${
                   isViewing
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "hover:bg-blue-50 text-muted-foreground hover:text-blue-600"
@@ -739,7 +741,8 @@ export default function ResourcesContent() {
               </ActionButton>
 
               <button
-                className="p-1.5 rounded hover:bg-muted text-muted-foreground transition-colors"
+                type="button"
+                className="p-1.5 rounded hover:bg-muted text-muted-foreground transition-colors cursor-pointer"
                 title="Thêm tùy chọn"
               >
                 <MoreHorizontal size={14} />
@@ -768,264 +771,274 @@ export default function ResourcesContent() {
         onSuccess={() => refetchResources()}
       />
 
-      <div className="flex flex-col h-full bg-background overflow-hidden">
-        <div className="flex lg:hidden flex-1 items-center justify-center px-6">
-          <div className="text-center max-w-xs bg-card p-6 rounded-2xl border border-border shadow-sm">
-            <Monitor size={40} className="text-primary/40 mx-auto mb-4" />
-            <h2 className="text-sm font-bold text-foreground mb-2">
-              Tính năng tối ưu cho Desktop
-            </h2>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Quản lý tài nguyên hệ thống yêu cầu không gian hiển thị rộng. Vui
-              lòng sử dụng máy tính để trải nghiệm.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex-shrink-0 px-4 md:px-5 py-4 border-b border-border bg-card z-10 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div>
-              <h1 className="text-base md:text-lg font-bold text-foreground">
-                Tài nguyên Hệ thống (Resources)
-              </h1>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {totalRows} phân hệ chức năng đang được quản lý
+      <div className="flex flex-col h-full bg-background overflow-hidden relative">
+        {/* ── MOBILE & TABLET RESTRICTION (< xl / < 1280px) ── */}
+        <div className="flex xl:hidden flex-1 h-full w-full items-center justify-center p-6 bg-background">
+          <div className="text-center max-w-sm bg-card p-8 rounded-2xl border border-border shadow-md space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto shadow-2xs">
+              <Monitor size={30} />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-base font-bold text-foreground">
+                Yêu cầu màn hình máy tính (Desktop)
+              </h2>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Tính năng <strong>Tài nguyên &amp; Phân hệ hệ thống</strong> yêu cầu bố cục ma trận đa cột song song để quản lý phân quyền và phân hệ an toàn.
+              </p>
+              <p className="text-[11px] text-muted-foreground/80 leading-relaxed bg-muted/40 p-2.5 rounded-lg border border-border/60">
+                Vui lòng sử dụng máy tính có màn hình từ <strong>1280px trở lên</strong> (không hỗ trợ điện thoại và máy tính bảng).
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <ActionButton
-                variant="ghost"
-                className="hidden sm:flex !h-8 !px-3 !text-xs !font-medium"
-                isLoading={resourcesFetching}
-                onAction={async () => {
-                  await new Promise((r) => setTimeout(r, 1200));
-                  return "Danh_sach_Phan_he.xlsx";
-                }}
-                loadingMessage="Đang chuẩn bị dữ liệu xuất..."
-                successMessage={(file) => `Đã tải xuống ${file}`}
-                toastOptions={{ showProgress: true, duration: 5000 }}
-              >
-                <Download size={13} /> Xuất Excel
-              </ActionButton>
-
-              <ActionButton
-                variant="ghost"
-                className="hidden sm:flex !h-8 !px-3 !text-xs !font-medium"
-                isLoading={resourcesFetching}
-                onAction={async () => {
-                  await refetchResources();
-                }}
-                loadingMessage="Đang làm mới..."
-                successMessage="Dữ liệu đã được cập nhật"
-              >
-                <RefreshCw size={13} /> Làm mới
-              </ActionButton>
-
-              <ActionButton
-                variant="primary"
-                className="!h-8 !px-3 !py-0 !text-xs"
-                onAction={() => setIsCreateModalOpen(true)}
-              >
-                <Plus size={14} />
-                <span className="hidden sm:inline">Thêm Phân hệ mới</span>
-                <span className="sm:hidden">Thêm</span>
-              </ActionButton>
-            </div>
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="btn-secondary text-xs px-4 py-2 mt-2 cursor-pointer inline-flex items-center gap-1.5"
+            >
+              <ChevronLeft size={14} /> Quay lại trang trước
+            </button>
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 relative">
-          <DetailLayout
-            title="Chi tiết Tài nguyên"
-            leftSidebar={{
-              collapsed: leftCollapsed,
-              onCollapseChange: setLeftCollapsed,
-              defaultCollapsed: !selectedResourceId,
-              content: (collapsed) => {
-                if (collapsed || !selectedResourceId) {
-                  return (
-                    <div className="flex flex-col items-center py-6 gap-6 text-muted-foreground fade-in h-full">
-                      <div
-                        className="relative group cursor-help"
-                        title="Vui lòng chọn tài nguyên để thao tác"
-                      >
-                        <FileText size={20} />
-                      </div>
-                      {selectedResourceId && (
+        {/* ── DESKTOP-ONLY INTERFACE (>= xl / >= 1280px) ── */}
+        <div className="hidden xl:flex flex-col h-full flex-1 min-h-0 overflow-hidden">
+          {/* Top Header */}
+          <div className="flex-shrink-0 px-5 py-4 border-b border-border bg-card z-10 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <h1 className="text-lg font-bold text-foreground">
+                  Tài nguyên Hệ thống (Resources)
+                </h1>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {totalRows} phân hệ chức năng đang được quản lý · Cấu hình phân hệ IAM
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <ActionButton
+                  variant="ghost"
+                  className="!h-8 !px-3 !text-xs !font-medium"
+                  isLoading={resourcesFetching}
+                  onAction={async () => {
+                    await new Promise((r) => setTimeout(r, 1200));
+                    return "Danh_sach_Phan_he.xlsx";
+                  }}
+                  loadingMessage="Đang chuẩn bị dữ liệu xuất..."
+                  successMessage={(file) => `Đã tải xuống ${file}`}
+                  toastOptions={{ showProgress: true, duration: 5000 }}
+                >
+                  <Download size={13} /> Xuất Excel
+                </ActionButton>
+
+                <ActionButton
+                  variant="ghost"
+                  className="!h-8 !px-3 !text-xs !font-medium"
+                  isLoading={resourcesFetching}
+                  onAction={async () => {
+                    await refetchResources();
+                  }}
+                  loadingMessage="Đang làm mới..."
+                  successMessage="Dữ liệu đã được cập nhật"
+                >
+                  <RefreshCw size={13} /> Làm mới
+                </ActionButton>
+
+                <ActionButton
+                  variant="primary"
+                  className="!h-8 !px-3 !py-0 !text-xs"
+                  onAction={() => setIsCreateModalOpen(true)}
+                >
+                  <Plus size={14} />
+                  <span>Thêm Phân hệ mới</span>
+                </ActionButton>
+              </div>
+            </div>
+          </div>
+
+          {/* 3-Column Detail Layout */}
+          <div className="flex-1 min-h-0 relative">
+            <DetailLayout
+              // title="Chi tiết Tài nguyên"
+              leftSidebar={{
+                collapsed: leftCollapsed,
+                onCollapseChange: setLeftCollapsed,
+                defaultCollapsed: !selectedResourceId,
+                content: (collapsed) => {
+                  if (collapsed || !selectedResourceId) {
+                    return (
+                      <div className="flex flex-col items-center py-6 gap-6 text-muted-foreground fade-in h-full">
                         <div
                           className="relative group cursor-help"
-                          title="Lịch sử"
+                          title="Vui lòng chọn tài nguyên để thao tác"
                         >
-                          <Clock size={20} />
+                          <FileText size={20} />
                         </div>
-                      )}
-                    </div>
-                  );
-                }
-
-                if (!resourceInfo) return null;
-
-                return (
-                  <div className="flex flex-col h-full fade-in p-5">
-                    <div className="flex flex-col items-center text-center mb-6">
-                      <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl mb-3 shadow-sm">
-                        {editForm.slug?.slice(0, 2).toUpperCase() ||
-                          resourceInfo.slug?.slice(0, 2).toUpperCase()}
                       </div>
+                    );
+                  }
 
-                      {!isEditing ? (
-                        <>
-                          <h2 className="text-base font-bold text-foreground">
-                            {resourceInfo.name}
-                          </h2>
-                          <p className="text-[10px] font-mono text-muted-foreground mt-0.5 px-2 py-0.5 bg-muted/50 rounded">
-                            {resourceInfo.slug}
-                          </p>
-                        </>
-                      ) : (
-                        <div className="w-full space-y-2 px-2 mt-1">
-                          <input
-                            type="text"
-                            value={editForm.name}
-                            onChange={(e) =>
-                              setEditForm((p) => ({
-                                ...p,
-                                name: e.target.value,
-                              }))
-                            }
-                            className="w-full input-base text-sm font-bold text-center py-1.5"
-                            placeholder="Tên tài nguyên"
-                          />
-                          <input
-                            type="text"
-                            value={editForm.slug}
-                            onChange={(e) =>
-                              setEditForm((p) => ({
-                                ...p,
-                                slug: e.target.value,
-                              }))
-                            }
-                            className="w-full input-base text-xs font-mono text-center py-1.5"
-                            placeholder="Slug"
-                          />
+                  if (!resourceInfo) return null;
+
+                  return (
+                    <div className="flex flex-col h-full fade-in p-5">
+                      <div className="flex flex-col items-center text-center mb-6">
+                        <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl mb-3 shadow-sm">
+                          {editForm.slug?.slice(0, 2).toUpperCase() ||
+                            resourceInfo.slug?.slice(0, 2).toUpperCase()}
                         </div>
-                      )}
 
-                      {!isEditing && (
-                        <div className="flex items-center justify-center gap-2 w-full mt-6">
-                          <ActionButton
-                            iconOnly
-                            variant="secondary"
-                            tooltip="Chỉnh sửa thông tin"
-                            className="!w-9 !h-9 !rounded-full"
-                            onClick={() => setIsEditing(true)}
-                          >
-                            <Edit size={14} />
-                          </ActionButton>
-                          <div className="w-px h-5 bg-border mx-1" />
-                          <ActionButton
-                            iconOnly
-                            variant="destructive"
-                            tooltip="Xóa tài nguyên"
-                            className="!w-9 !h-9 !rounded-full bg-red-50 text-red-600 hover:bg-red-100"
-                            requireConfirm
-                            confirmTitle="Xóa phân hệ?"
-                            confirmMessage={`Xác nhận xóa phân hệ "${resourceInfo.name}" và toàn bộ quyền liên quan? Hành động này không thể hoàn tác.`}
-                            confirmLabel="Xóa"
-                            onAction={async () => {
-                              await deleteResource(resourceInfo.id).unwrap();
-                              handleCloseDetail();
-                              refetchResources();
-                              return resourceInfo.name;
-                            }}
-                            loadingMessage="Đang xóa..."
-                            successMessage={(name) => `Đã xóa phân hệ ${name}.`}
-                          >
-                            <Trash2 size={14} />
-                          </ActionButton>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="space-y-6">
-                      <div>
-                        <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-2 mb-3">
-                          Mô tả Phân hệ
-                        </h3>
                         {!isEditing ? (
-                          <p className="text-xs text-foreground leading-relaxed bg-muted/20 p-3 rounded-lg border border-border/50">
-                            {resourceInfo.description ||
-                              "Chưa có mô tả cho phân hệ này."}
-                          </p>
+                          <>
+                            <h2 className="text-base font-bold text-foreground">
+                              {resourceInfo.name}
+                            </h2>
+                            <p className="text-[10px] font-mono text-muted-foreground mt-0.5 px-2 py-0.5 bg-muted/50 rounded">
+                              {resourceInfo.slug}
+                            </p>
+                          </>
                         ) : (
-                          <textarea
-                            value={editForm.description}
-                            onChange={(e) =>
-                              setEditForm((p) => ({
-                                ...p,
-                                description: e.target.value,
-                              }))
-                            }
-                            rows={4}
-                            className="w-full input-base text-xs p-3 resize-none bg-background leading-relaxed"
-                            placeholder="Nhập mô tả..."
-                          />
+                          <div className="w-full space-y-2 px-2 mt-1">
+                            <input
+                              type="text"
+                              value={editForm.name}
+                              onChange={(e) =>
+                                setEditForm((p) => ({
+                                  ...p,
+                                  name: e.target.value,
+                                }))
+                              }
+                              className="w-full input-base text-sm font-bold text-center py-1.5"
+                              placeholder="Tên tài nguyên"
+                            />
+                            <input
+                              type="text"
+                              value={editForm.slug}
+                              onChange={(e) =>
+                                setEditForm((p) => ({
+                                  ...p,
+                                  slug: e.target.value,
+                                }))
+                              }
+                              className="w-full input-base text-xs font-mono text-center py-1.5"
+                              placeholder="Slug"
+                            />
+                          </div>
+                        )}
+
+                        {!isEditing && (
+                          <div className="flex items-center justify-center gap-2 w-full mt-6">
+                            <ActionButton
+                              iconOnly
+                              variant="secondary"
+                              tooltip="Chỉnh sửa thông tin"
+                              className="!w-9 !h-9 !rounded-full"
+                              onClick={() => setIsEditing(true)}
+                            >
+                              <Edit size={14} />
+                            </ActionButton>
+                            <div className="w-px h-5 bg-border mx-1" />
+                            <ActionButton
+                              iconOnly
+                              variant="destructive"
+                              tooltip="Xóa tài nguyên"
+                              className="!w-9 !h-9 !rounded-full bg-red-50 text-red-600 hover:bg-red-100"
+                              requireConfirm
+                              confirmTitle="Xóa phân hệ?"
+                              confirmMessage={`Xác nhận xóa phân hệ "${resourceInfo.name}" và toàn bộ quyền liên quan? Hành động này không thể hoàn tác.`}
+                              confirmLabel="Xóa"
+                              onAction={async () => {
+                                await deleteResource(resourceInfo.id).unwrap();
+                                handleCloseDetail();
+                                refetchResources();
+                                return resourceInfo.name;
+                              }}
+                              loadingMessage="Đang xóa..."
+                              successMessage={(name) =>
+                                `Đã xóa phân hệ ${name}.`
+                              }
+                            >
+                              <Trash2 size={14} />
+                            </ActionButton>
+                          </div>
                         )}
                       </div>
 
-                      <div>
-                        <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-2 mb-4">
-                          Lịch sử hệ thống
-                        </h3>
-                        <div className="relative">
-                          <div className="absolute left-1.5 top-2 bottom-2 w-px bg-border z-0" />
-                          <div className="space-y-5 relative z-10">
-                            {/* DELETE LOG */}
-                            {resourceInfo.deletedAt && (
-                              <div className="flex gap-4">
-                                <div className="w-3 h-3 rounded-full bg-background border-2 border-red-500 mt-1 flex-shrink-0" />
-                                <div>
-                                  <h4 className="text-xs font-bold text-red-600 leading-tight mb-0.5">
-                                    Đã xóa
-                                  </h4>
-                                  <p className="text-[10px] text-muted-foreground mb-1">
-                                    {new Date(
-                                      resourceInfo.deletedAt,
-                                    ).toLocaleString("vi-VN")}
-                                  </p>
-                                  {resourceInfo.deletedByName && (
-                                    <p className="text-[10px] text-foreground italic border-l-2 border-border/50 pl-2 bg-muted/20 py-1 rounded-r">
-                                      Bởi: {resourceInfo.deletedByName}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            )}
+                      <div className="space-y-6">
+                        <div>
+                          <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-2 mb-3">
+                            Mô tả Phân hệ
+                          </h3>
+                          {!isEditing ? (
+                            <p className="text-xs text-foreground leading-relaxed bg-muted/20 p-3 rounded-lg border border-border/50">
+                              {resourceInfo.description ||
+                                "Chưa có mô tả cho phân hệ này."}
+                            </p>
+                          ) : (
+                            <textarea
+                              value={editForm.description}
+                              onChange={(e) =>
+                                setEditForm((p) => ({
+                                  ...p,
+                                  description: e.target.value,
+                                }))
+                              }
+                              rows={4}
+                              className="w-full input-base text-xs p-3 resize-none bg-background leading-relaxed"
+                              placeholder="Nhập mô tả..."
+                            />
+                          )}
+                        </div>
 
-                            {/* UPDATE LOG */}
-                            {resourceInfo.updatedAt && (
-                              <div className="flex gap-4">
-                                <div className="w-3 h-3 rounded-full bg-background border-2 border-primary mt-1 flex-shrink-0" />
-                                <div>
-                                  <h4 className="text-xs font-bold text-foreground leading-tight mb-0.5">
-                                    Cập nhật gần nhất
-                                  </h4>
-                                  <p className="text-[10px] text-muted-foreground mb-1">
-                                    {new Date(
-                                      resourceInfo.updatedAt,
-                                    ).toLocaleString("vi-VN")}
-                                  </p>
-                                  {resourceInfo.updatedByName && (
-                                    <p className="text-[10px] text-foreground italic border-l-2 border-border/50 pl-2 bg-muted/20 py-1 rounded-r">
-                                      Bởi: {resourceInfo.updatedByName}
+                        <div>
+                          <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground border-b border-border pb-2 mb-4">
+                            Lịch sử hệ thống
+                          </h3>
+                          <div className="relative">
+                            <div className="absolute left-1.5 top-2 bottom-2 w-px bg-border z-0" />
+                            <div className="space-y-5 relative z-10">
+                              {/* DELETE LOG */}
+                              {resourceInfo.deletedAt && (
+                                <div className="flex gap-4">
+                                  <div className="w-3 h-3 rounded-full bg-background border-2 border-red-500 mt-1 flex-shrink-0" />
+                                  <div>
+                                    <h4 className="text-xs font-bold text-red-600 leading-tight mb-0.5">
+                                      Đã xóa
+                                    </h4>
+                                    <p className="text-[10px] text-muted-foreground mb-1">
+                                      {new Date(
+                                        resourceInfo.deletedAt,
+                                      ).toLocaleString("vi-VN")}
                                     </p>
-                                  )}
+                                    {resourceInfo.deletedByName && (
+                                      <p className="text-[10px] text-foreground italic border-l-2 border-border/50 pl-2 bg-muted/20 py-1 rounded-r">
+                                        Bởi: {resourceInfo.deletedByName}
+                                      </p>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              )}
 
-                            {/* CREATE LOG */}
-                            {resourceInfo.createdAt && (
+                              {/* UPDATE LOG */}
+                              {resourceInfo.updatedAt && (
+                                <div className="flex gap-4">
+                                  <div className="w-3 h-3 rounded-full bg-background border-2 border-primary mt-1 flex-shrink-0" />
+                                  <div>
+                                    <h4 className="text-xs font-bold text-foreground leading-tight mb-0.5">
+                                      Cập nhật gần nhất
+                                    </h4>
+                                    <p className="text-[10px] text-muted-foreground mb-1">
+                                      {new Date(
+                                        resourceInfo.updatedAt,
+                                      ).toLocaleString("vi-VN")}
+                                    </p>
+                                    {resourceInfo.updatedByName && (
+                                      <p className="text-[10px] text-foreground italic border-l-2 border-border/50 pl-2 bg-muted/20 py-1 rounded-r">
+                                        Bởi: {resourceInfo.updatedByName}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* CREATE LOG */}
                               <div className="flex gap-4">
                                 <div className="w-3 h-3 rounded-full bg-background border-2 border-muted-foreground mt-1 flex-shrink-0" />
                                 <div>
@@ -1033,9 +1046,11 @@ export default function ResourcesContent() {
                                     Khởi tạo hệ thống
                                   </h4>
                                   <p className="text-[10px] text-muted-foreground mb-1">
-                                    {new Date(
-                                      resourceInfo.createdAt,
-                                    ).toLocaleString("vi-VN")}
+                                    {resourceInfo.createdAt
+                                      ? new Date(
+                                          resourceInfo.createdAt,
+                                        ).toLocaleString("vi-VN")
+                                      : "—"}
                                   </p>
                                   {resourceInfo.createdByName && (
                                     <p className="text-[10px] text-foreground italic border-l-2 border-border/50 pl-2 bg-muted/20 py-1 rounded-r">
@@ -1044,309 +1059,312 @@ export default function ResourcesContent() {
                                   )}
                                 </div>
                               </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                },
+              }}
+              /* ─── RIGHT COLUMN: Permissions inside Resource ─── */
+              rightSidebar={{
+                collapsed: rightCollapsed,
+                onCollapseChange: setRightCollapsed,
+                defaultCollapsed: !selectedResourceId,
+                content: (collapsed) => {
+                  if (collapsed || !selectedResourceId) {
+                    return (
+                      <div className="flex flex-col items-center py-6 gap-6 text-muted-foreground fade-in h-full">
+                        <div
+                          className="relative group cursor-help"
+                          title="Vui lòng chọn tài nguyên để xem quyền"
+                        >
+                          <ShieldAlert size={20} />
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  if (
+                    detailsFetching &&
+                    (!resourceInfo || !resourceInfo.permissions)
+                  ) {
+                    return (
+                      <div className="flex justify-center items-center h-full text-primary fade-in">
+                        <RefreshCw className="animate-spin" size={24} />
+                      </div>
+                    );
+                  }
+
+                  const allPermissions = resourceInfo?.permissions || [];
+
+                  const filteredPermissions = allPermissions.filter(
+                    (perm: Permission) => {
+                      const searchLower = permSearch.toLowerCase();
+                      return (
+                        perm.name.toLowerCase().includes(searchLower) ||
+                        perm.slug.toLowerCase().includes(searchLower) ||
+                        perm.action.toLowerCase().includes(searchLower) ||
+                        perm.scope.toLowerCase().includes(searchLower)
+                      );
+                    },
+                  );
+
+                  return (
+                    <div className="flex flex-col h-full fade-in overflow-y-auto custom-scrollbar p-1">
+                      <div className="mb-4 pt-1 space-y-3">
+                        <div>
+                          <h3 className="text-xs font-bold text-foreground px-2">
+                            Quản lý Quyền hạn (Permissions)
+                          </h3>
+                          <p className="text-[10px] text-muted-foreground mt-1 px-2">
+                            Các quyền thuộc phân hệ này. Bấm vào &quot;Chỉnh
+                            sửa&quot; ở Footer để quản lý các quyền này.
+                          </p>
+                        </div>
+
+                        <div className="px-2">
+                          <div className="relative">
+                            <Search
+                              size={13}
+                              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Tìm quyền (tên, action, scope)..."
+                              value={permSearch}
+                              onChange={(e) => setPermSearch(e.target.value)}
+                              className="input-base pl-8 py-1.5 text-xs w-full bg-background"
+                            />
+                            {permSearch && (
+                              <button
+                                type="button"
+                                onClick={() => setPermSearch("")}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                              >
+                                <X size={12} />
+                              </button>
                             )}
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                );
-              },
-            }}
-            /* ─── RIGHT COLUMN: Permissions inside Resource ─── */
-            rightSidebar={{
-              collapsed: rightCollapsed,
-              onCollapseChange: setRightCollapsed,
-              defaultCollapsed: !selectedResourceId,
-              content: (collapsed) => {
-                if (collapsed || !selectedResourceId) {
-                  return (
-                    <div className="flex flex-col items-center py-6 gap-6 text-muted-foreground fade-in h-full">
-                      <div
-                        className="relative group cursor-help"
-                        title="Vui lòng chọn tài nguyên để xem quyền"
-                      >
-                        <ShieldAlert size={20} />
-                      </div>
-                    </div>
-                  );
-                }
 
-                // Show spinner if we are fetching deep details
-                if (
-                  detailsFetching &&
-                  (!resourceInfo || !resourceInfo.permissions)
-                ) {
-                  return (
-                    <div className="flex justify-center items-center h-full text-primary fade-in">
-                      <RefreshCw className="animate-spin" size={24} />
-                    </div>
-                  );
-                }
-
-                const allPermissions = resourceInfo?.permissions || [];
-
-                const filteredPermissions = allPermissions.filter(
-                  (perm: Permission) => {
-                    const searchLower = permSearch.toLowerCase();
-                    return (
-                      perm.name.toLowerCase().includes(searchLower) ||
-                      perm.slug.toLowerCase().includes(searchLower) ||
-                      perm.action.toLowerCase().includes(searchLower) ||
-                      perm.scope.toLowerCase().includes(searchLower)
-                    );
-                  },
-                );
-
-                return (
-                  <div className="flex flex-col h-full fade-in overflow-y-auto custom-scrollbar p-1">
-                    <div className="mb-4 pt-1 space-y-3">
-                      <div>
-                        <h3 className="text-xs font-bold text-foreground px-2">
-                          Quản lý Quyền hạn (Permissions)
-                        </h3>
-                        <p className="text-[10px] text-muted-foreground mt-1 px-2">
-                          Các quyền thuộc phân hệ này. Bấm vào &quot;Chỉnh
-                          sửa&quot; ở Footer để quản lý các quyền này.
-                        </p>
-                      </div>
-
-                      <div className="px-2">
-                        <div className="relative">
-                          <Search
-                            size={13}
-                            className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+                      {allPermissions.length === 0 ? (
+                        <div className="text-center py-8 opacity-60">
+                          <ShieldAlert
+                            size={24}
+                            className="text-muted-foreground mx-auto mb-2"
                           />
-                          <input
-                            type="text"
-                            placeholder="Tìm quyền (tên, action, scope)..."
-                            value={permSearch}
-                            onChange={(e) => setPermSearch(e.target.value)}
-                            className="input-base pl-8 py-1.5 text-xs w-full bg-background"
-                          />
-                          {permSearch && (
-                            <button
-                              onClick={() => setPermSearch("")}
-                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                            >
-                              <X size={12} />
-                            </button>
-                          )}
+                          <p className="text-[10px] font-medium text-foreground">
+                            Phân hệ này chưa có quyền nào
+                          </p>
                         </div>
-                      </div>
-                    </div>
-
-                    {allPermissions.length === 0 ? (
-                      <div className="text-center py-8 opacity-60">
-                        <ShieldAlert
-                          size={24}
-                          className="text-muted-foreground mx-auto mb-2"
-                        />
-                        <p className="text-[10px] font-medium text-foreground">
-                          Phân hệ này chưa có quyền nào
-                        </p>
-                      </div>
-                    ) : filteredPermissions.length === 0 ? (
-                      <div className="text-center py-8 opacity-60">
-                        <Search
-                          size={24}
-                          className="text-muted-foreground mx-auto mb-2"
-                        />
-                        <p className="text-[10px] font-medium text-foreground">
-                          Không tìm thấy quyền phù hợp
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2 pb-6 px-1">
-                        {filteredPermissions.map((perm: Permission) => (
-                          <div
-                            key={perm.id}
-                            className={`flex flex-col gap-2 p-3 bg-muted/10 border border-border/50 rounded-xl transition-colors group ${
-                              !perm.isLive ? "opacity-70 hover:opacity-100" : ""
-                            }`}
-                          >
-                            <div className="flex items-start justify-between min-w-0">
-                              <div className="flex items-center justify-between w-full">
-                                <div className="min-w-0 pr-2">
-                                  <p
-                                    className={`text-xs font-bold truncate transition-colors ${
-                                      perm.isLive
-                                        ? "text-foreground"
-                                        : "text-muted-foreground"
-                                    }`}
-                                  >
-                                    {perm.name}
-                                  </p>
-                                  <p className="text-[10px] text-muted-foreground font-mono truncate mt-1">
-                                    {perm.slug}
-                                  </p>
-                                </div>
-
-                                <div className="flex items-center gap-1.5 flex-shrink-0">
-                                  {/* Permission Live Toggle - Disabled when !isEditing */}
-                                  <div
-                                    title={
-                                      !isEditing
-                                        ? "Bấm 'Chỉnh sửa' để thay đổi"
-                                        : ""
-                                    }
-                                  >
-                                    <ActionSwitch
-                                      checked={!!perm.isLive}
-                                      disabled={!isEditing}
-                                      requireConfirm
-                                      confirmTitle={
+                      ) : filteredPermissions.length === 0 ? (
+                        <div className="text-center py-8 opacity-60">
+                          <Search
+                            size={24}
+                            className="text-muted-foreground mx-auto mb-2"
+                          />
+                          <p className="text-[10px] font-medium text-foreground">
+                            Không tìm thấy quyền phù hợp
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2 pb-6 px-1">
+                          {filteredPermissions.map((perm: Permission) => (
+                            <div
+                              key={perm.id}
+                              className={`flex flex-col gap-2 p-3 bg-muted/10 border border-border/50 rounded-xl transition-colors group ${
+                                !perm.isLive ? "opacity-70 hover:opacity-100" : ""
+                              }`}
+                            >
+                              <div className="flex items-start justify-between min-w-0">
+                                <div className="flex items-center justify-between w-full">
+                                  <div className="min-w-0 pr-2">
+                                    <p
+                                      className={`text-xs font-bold truncate transition-colors ${
                                         perm.isLive
-                                          ? "Tắt quyền?"
-                                          : "Kích hoạt quyền?"
-                                      }
-                                      confirmMessage={`Xác nhận ${perm.isLive ? "tắt" : "bật"} quyền "${perm.name}"?`}
-                                      confirmLabel="Xác nhận"
-                                      onAction={async (newChecked) => {
-                                        await togglePermissionStatus({
-                                          id: perm.id,
-                                          isLive: newChecked,
-                                        }).unwrap();
-                                        refetchResources();
-                                        return {
-                                          name: perm.name,
-                                          isLive: newChecked,
-                                        };
-                                      }}
-                                      successMessage={({ name, isLive }) =>
-                                        `Đã ${isLive ? "kích hoạt" : "tắt"} quyền ${name}`
-                                      }
-                                      errorMessage="Lỗi khi lưu trạng thái quyền"
-                                    />
+                                          ? "text-foreground"
+                                          : "text-muted-foreground"
+                                      }`}
+                                    >
+                                      {perm.name}
+                                    </p>
+                                    <p className="text-[10px] text-muted-foreground font-mono truncate mt-1">
+                                      {perm.slug}
+                                    </p>
                                   </div>
 
-                                  {isEditing && (
-                                    <ActionButton
-                                      iconOnly
-                                      variant="ghost"
-                                      className="!w-6 !h-6 !p-0 text-muted-foreground hover:bg-red-50 hover:text-red-600 rounded opacity-0 group-hover:opacity-100 transition-all focus:opacity-100"
-                                      tooltip="Xóa quyền này vĩnh viễn"
-                                      requireConfirm
-                                      confirmTitle="Xóa quyền?"
-                                      confirmMessage={`Bạn có chắc chắn muốn xóa quyền "${perm.name}" vĩnh viễn? Việc này có thể ảnh hưởng đến hệ thống đang chạy.`}
-                                      confirmLabel="Xóa"
-                                      onAction={async () => {
-                                        await deletePermission(
-                                          perm.id,
-                                        ).unwrap();
-                                        refetchResources();
-                                        return perm.name;
-                                      }}
-                                      successMessage={(name) =>
-                                        `Đã xóa quyền ${name}`
+                                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                                    <div
+                                      title={
+                                        !isEditing
+                                          ? "Bấm 'Chỉnh sửa' để thay đổi"
+                                          : ""
                                       }
                                     >
-                                      <Trash2 size={13} />
-                                    </ActionButton>
-                                  )}
+                                      <ActionSwitch
+                                        checked={!!perm.isLive}
+                                        disabled={!isEditing}
+                                        requireConfirm
+                                        confirmTitle={
+                                          perm.isLive
+                                            ? "Tắt quyền?"
+                                            : "Kích hoạt quyền?"
+                                        }
+                                        confirmMessage={`Xác nhận ${
+                                          perm.isLive ? "tắt" : "bật"
+                                        } quyền "${perm.name}"?`}
+                                        confirmLabel="Xác nhận"
+                                        onAction={async (newChecked) => {
+                                          await togglePermissionStatus({
+                                            id: perm.id,
+                                            isLive: newChecked,
+                                          }).unwrap();
+                                          refetchResources();
+                                          return {
+                                            name: perm.name,
+                                            isLive: newChecked,
+                                          };
+                                        }}
+                                        successMessage={({ name, isLive }) =>
+                                          `Đã ${
+                                            isLive ? "kích hoạt" : "tắt"
+                                          } quyền ${name}`
+                                        }
+                                        errorMessage="Lỗi khi lưu trạng thái quyền"
+                                      />
+                                    </div>
+
+                                    {isEditing && (
+                                      <ActionButton
+                                        iconOnly
+                                        variant="ghost"
+                                        className="!w-6 !h-6 !p-0 text-muted-foreground hover:bg-red-50 hover:text-red-600 rounded opacity-0 group-hover:opacity-100 transition-all focus:opacity-100"
+                                        tooltip="Xóa quyền này vĩnh viễn"
+                                        requireConfirm
+                                        confirmTitle="Xóa quyền?"
+                                        confirmMessage={`Bạn có chắc chắn muốn xóa quyền "${perm.name}" vĩnh viễn? Việc này có thể ảnh hưởng đến hệ thống đang chạy.`}
+                                        confirmLabel="Xóa"
+                                        onAction={async () => {
+                                          await deletePermission(
+                                            perm.id,
+                                          ).unwrap();
+                                          refetchResources();
+                                          return perm.name;
+                                        }}
+                                        successMessage={(name) =>
+                                          `Đã xóa quyền ${name}`
+                                        }
+                                      >
+                                        <Trash2 size={13} />
+                                      </ActionButton>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
 
-                            <div className="flex gap-2 mt-0.5">
-                              <span className="text-[9px] uppercase tracking-wider font-semibold text-primary/70 bg-primary/5 px-1.5 py-0.5 rounded border border-primary/10">
-                                {perm.action}
-                              </span>
-                              <span className="text-[9px] uppercase tracking-wider font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">
-                                {perm.scope}
-                              </span>
+                              <div className="flex gap-2 mt-0.5">
+                                <span className="text-[9px] uppercase tracking-wider font-semibold text-primary/70 bg-primary/5 px-1.5 py-0.5 rounded border border-primary/10">
+                                  {perm.action}
+                                </span>
+                                <span className="text-[9px] uppercase tracking-wider font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100">
+                                  {perm.scope}
+                                </span>
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                },
+              }}
+              /* ── FOOTER: Save and Add Permission Actions ── */
+              footer={
+                selectedResourceId ? (
+                  <>
+                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground mr-auto">
+                      <Clock size={13} /> Cập nhật lần cuối:{" "}
+                      {resourceInfo?.updatedAt
+                        ? new Date(resourceInfo.updatedAt).toLocaleDateString(
+                            "vi-VN",
+                          )
+                        : "—"}
+                    </div>
+
+                    {!isEditing ? (
+                      <>
+                        <button
+                          type="button"
+                          className="btn-secondary text-xs px-4 py-2 mr-2 cursor-pointer"
+                          onClick={handleCloseDetail}
+                        >
+                          Đóng
+                        </button>
+                        <button
+                          type="button"
+                          className="btn-primary flex items-center gap-2 text-xs px-5 py-2 cursor-pointer"
+                          onClick={() => setIsEditing(true)}
+                        >
+                          <Edit size={14} /> Chỉnh sửa
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <ActionButton
+                          isUnderDevelopment
+                          variant="outline"
+                          className="text-xs px-4 py-2 border-dashed hidden lg:flex cursor-pointer"
+                        >
+                          <Plus size={13} className="mr-1 inline-block" /> Thêm
+                          Quyền
+                        </ActionButton>
+
+                        <button
+                          type="button"
+                          className="btn-secondary text-xs px-4 py-2 cursor-pointer"
+                          onClick={handleCancelEdit}
+                        >
+                          Hủy
+                        </button>
+
+                        <ActionButton
+                          variant="primary"
+                          className="text-xs px-5 py-2 min-w-[140px] justify-center cursor-pointer"
+                          isLoading={isUpdatingResource || detailsFetching}
+                          disabled={!hasChanges}
+                          onAction={async () => {
+                            await updateResource({
+                              id: selectedResourceId,
+                              name: editForm.name,
+                              slug: editForm.slug,
+                              description: editForm.description,
+                            }).unwrap();
+                            setIsEditing(false);
+                            refetchResources();
+                            return editForm.name;
+                          }}
+                          loadingMessage="Đang lưu thay đổi..."
+                          successMessage={(name) =>
+                            `Đã cập nhật tài nguyên "${name}"`
+                          }
+                          errorMessage="Lỗi khi lưu thông tin."
+                        >
+                          <Save size={14} /> Lưu thay đổi
+                        </ActionButton>
+                      </>
                     )}
+                  </>
+                ) : (
+                  <div className="w-full text-center text-xs font-medium text-muted-foreground italic flex items-center justify-center gap-2">
+                    <AlertTriangle size={14} className="text-amber-500" />
+                    Vui lòng chọn tài nguyên để thao tác
                   </div>
-                );
-              },
-            }}
-            /* ── FOOTER: Save and Add Permission Actions ── */
-            footer={
-              selectedResourceId ? (
-                <>
-                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground mr-auto hidden sm:flex">
-                    <Clock size={13} /> Cập nhật lần cuối:{" "}
-                    {resourceInfo?.updatedAt
-                      ? new Date(resourceInfo.updatedAt).toLocaleDateString(
-                          "vi-VN",
-                        )
-                      : "..."}
-                  </div>
-
-                  {!isEditing ? (
-                    <>
-                      <button
-                        className="btn-secondary text-xs px-4 py-2 mr-2"
-                        onClick={handleCloseDetail}
-                      >
-                        Đóng
-                      </button>
-                      <button
-                        className="btn-primary flex items-center gap-2 text-xs px-5 py-2"
-                        onClick={() => setIsEditing(true)}
-                      >
-                        <Edit size={14} /> Chỉnh sửa
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      {/* Đã xóa mr-auto và loại bỏ các dấu chấm than (!) */}
-                      <ActionButton
-                        isUnderDevelopment
-                        variant="outline"
-                        className="text-xs px-4 py-2 border-dashed hidden lg:flex"
-                      >
-                        <Plus size={13} className="mr-1 inline-block" /> Thêm
-                        Quyền
-                      </ActionButton>
-
-                      <button
-                        className="btn-secondary text-xs px-4 py-2"
-                        onClick={handleCancelEdit}
-                      >
-                        Hủy
-                      </button>
-
-                      <ActionButton
-                        variant="primary"
-                        className="text-xs px-5 py-2 min-w-[140px] justify-center"
-                        isLoading={isUpdatingResource || detailsFetching}
-                        disabled={!hasChanges}
-                        onAction={async () => {
-                          await updateResource({
-                            id: selectedResourceId,
-                            name: editForm.name,
-                            slug: editForm.slug,
-                            description: editForm.description,
-                          }).unwrap();
-                          setIsEditing(false);
-                          refetchResources();
-                          return editForm.name;
-                        }}
-                        loadingMessage="Đang lưu thay đổi..."
-                        successMessage={(name) =>
-                          `Đã cập nhật tài nguyên "${name}"`
-                        }
-                        errorMessage="Lỗi khi lưu thông tin."
-                      >
-                        <Save size={14} /> Lưu thay đổi
-                      </ActionButton>
-                    </>
-                  )}
-                </>
-              ) : (
-                <div className="w-full text-center text-xs font-medium text-muted-foreground italic flex items-center justify-center gap-2">
-                  <AlertTriangle size={14} className="text-amber-500" />
-                  Vui lòng chọn tài nguyên để thao tác
-                </div>
-              )
-            }
-          >
-            <div className="flex-1 min-h-0 overflow-hidden flex-col hidden md:flex">
+                )
+              }
+            >
               <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
                 <DataTable
                   columns={resourceColumns}
@@ -1359,15 +1377,14 @@ export default function ResourcesContent() {
                   }
                   pagination={pagination}
                   onPaginationChange={setPagination}
-                  // isLoading={resourcesLoading}
                   isFetching={resourcesFetching}
                   isLoading={isDataLoading}
                   skeletonRowCount={8}
                   onRowClick={(row) => handleSelectResource(row.original.id)}
                 />
               </div>
-            </div>
-          </DetailLayout>
+            </DetailLayout>
+          </div>
         </div>
       </div>
     </>

@@ -42,7 +42,10 @@ function parseJwt(token: string): { exp?: number } | null {
   }
 }
 
-export default function AppLayout({ children, user: initialServerUser }: AppLayoutProps) {
+export default function AppLayout({
+  children,
+  user: initialServerUser,
+}: AppLayoutProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -156,7 +159,7 @@ export default function AppLayout({ children, user: initialServerUser }: AppLayo
   }
 
   return (
-    <div className="h-screen overflow-hidden flex bg-background">
+    <div className="h-[100dvh] overflow-hidden flex bg-background">
       {/* Structural Spacer (Desktop Only) */}
       <div className="hidden md:block w-16 h-full flex-shrink-0 border-r border-border bg-card z-0" />
 
@@ -175,8 +178,8 @@ export default function AppLayout({ children, user: initialServerUser }: AppLayo
           onOpenMobileMenu={() => setMobileMenuOpen(true)}
         />
 
-        <main className="flex-1 overflow-hidden flex flex-col min-h-0 pb-0 md:pb-0">
-          <div className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col min-h-0 pb-[56px] md:pb-0">
+        <main className="flex-1 overflow-hidden flex flex-col min-h-0">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col min-h-0">
             {children}
           </div>
         </main>

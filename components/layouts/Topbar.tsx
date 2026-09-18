@@ -37,6 +37,7 @@ import {
   notificationsHref,
 } from "@/lib/notificationLinks";
 import { AuthUser } from "@/types/modelsver2";
+import AppImage from "../ui/AppImage";
 
 interface TopbarProps {
   onOpenMobileMenu?: () => void;
@@ -119,10 +120,8 @@ export default function Topbar({ onOpenMobileMenu, user }: TopbarProps) {
 
   const [logoutApi, { isLoading: isLoggingOut }] = useLogoutMutation();
 
-  const { data: notifRes, isLoading: isNotifLoading } = useGetNotificationsQuery(
-    undefined,
-    { skip: !user }
-  );
+  const { data: notifRes, isLoading: isNotifLoading } =
+    useGetNotificationsQuery(undefined, { skip: !user });
   const [markAllAsRead, { isLoading: isMarkingAll }] =
     useMarkAllAsReadMutation();
   const [markAsRead] = useMarkAsReadMutation();
@@ -153,7 +152,9 @@ export default function Topbar({ onOpenMobileMenu, user }: TopbarProps) {
 
   const [entityNames, setEntityNames] = useState<Record<string, string>>({});
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
+    new Date(),
+  );
 
   useEffect(() => {
     const initTimer = setTimeout(() => setCurrentTime(new Date()), 0);
@@ -250,9 +251,16 @@ export default function Topbar({ onOpenMobileMenu, user }: TopbarProps) {
             <Menu size={20} />
           </button>
           <Link href="/vi/dashboard" className="flex items-center gap-2 group">
-            <div className="w-7 h-7 bg-white rounded flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
+            {/* <div className="w-7 h-7 bg-white rounded flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
               <Home size={16} />
-            </div>
+            </div> */}
+            <AppImage
+              src="/icon.png"
+              alt="Logo"
+              width={28}
+              height={28}
+              className="flex items-center justify-center flex-shrink-0 "
+            />
             <span className="font-black text-sm tracking-tight text-white hidden sm:block">
               Chính Nam
             </span>
@@ -504,19 +512,22 @@ export default function Topbar({ onOpenMobileMenu, user }: TopbarProps) {
                 href="/vi/profile"
                 className="w-full flex items-center gap-3 px-4 py-2 text-sm hover:bg-muted transition-colors"
               >
-                <User size={14} className="text-muted-foreground" /> Hồ sơ cá nhân
+                <User size={14} className="text-muted-foreground" /> Hồ sơ cá
+                nhân
               </Link>
               <Link
                 href="/vi/claim-profile"
                 className="w-full flex items-center gap-3 px-4 py-2 text-sm hover:bg-muted transition-colors"
               >
-                <Briefcase size={14} className="text-muted-foreground" /> Yêu cầu cấp quyền
+                <Briefcase size={14} className="text-muted-foreground" /> Yêu
+                cầu cấp quyền
               </Link>
               <Link
                 href="/vi/settings"
                 className="w-full flex items-center gap-3 px-4 py-2 text-sm hover:bg-muted transition-colors"
               >
-                <Settings size={14} className="text-muted-foreground" /> Cài đặt hệ thống
+                <Settings size={14} className="text-muted-foreground" /> Cài đặt
+                hệ thống
               </Link>
               <div className="border-t border-border mt-1 pt-1">
                 <button

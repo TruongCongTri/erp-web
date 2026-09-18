@@ -26,13 +26,17 @@ import {
   X,
   Send,
   Hash,
+  ChevronLeft,
+  ChevronRight,
+  SlidersHorizontal,
+  ArrowUpDown,
+  Check,
 } from "lucide-react";
 
 import {
   DataTable,
   SortHeader,
   FacetFilter,
-  MobileFilterSheet,
   TriStateCheckbox,
 } from "@/components/ui/DataTable";
 import ActionButton from "@/components/buttons/ActionButton";
@@ -104,8 +108,8 @@ function Badge({
   if (!config) return <span className="badge badge-neutral">{label}</span>;
   const Icon = config.icon;
   return (
-    <span className={`badge ${config.className}`}>
-      {Icon && <Icon size={12} />}
+    <span className={`badge ${config.className} text-[10px] px-1.5 py-0.5`}>
+      {Icon && <Icon size={11} />}
       {config.label || label}
     </span>
   );
@@ -124,7 +128,6 @@ function HireRequestModal({
   const [departmentId, setDepartmentId] = useState<string>("");
   const [rawRequestNote, setRawRequestNote] = useState("");
 
-  // Tải danh sách phòng ban từ departmentApiSlice
   const { data: deptRes, isLoading: isDeptLoading } = useGetDepartmentsQuery({
     isActive: true,
     limit: 100,
@@ -133,7 +136,6 @@ function HireRequestModal({
   });
   const departments = deptRes?.data || [];
 
-  // Chuẩn hóa dữ liệu thành Options cho SearchableSelect
   const departmentOptions = useMemo<SelectOption<string>[]>(
     () =>
       departments.map((d) => ({
@@ -142,22 +144,19 @@ function HireRequestModal({
         description: d.description || undefined,
         icon: <Building2 size={13} className="text-muted-foreground" />,
       })),
-    [departments]
+    [departments],
   );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!departmentId) {
       gooeyToast.error("Vui lòng chọn phòng ban tiếp nhận.");
       return;
     }
-
     if (!rawRequestNote.trim()) {
       gooeyToast.error("Vui lòng nhập mô tả yêu cầu tuyển dụng.");
       return;
     }
-
     onSubmit({ rawRequestNote: rawRequestNote.trim(), departmentId });
   };
 
@@ -216,12 +215,12 @@ function HireRequestModal({
               rows={4}
               value={rawRequestNote}
               onChange={(e) => setRawRequestNote(e.target.value)}
-              placeholder="VD: Cần tuyển gấp 2 Kỹ sư MEP hiện trường dự án Đồng Nai. Ưu tiên có kinh nghiệm shop drawing và giám sát thi công thực tế..."
+              placeholder="VD: Cần tuyển gấp 2 Kỹ sư MEP hiện trường dự án Đồng Nai. Ưu tiên có kinh nghiệm shop drawing..."
               className="input-base w-full text-xs resize-none leading-relaxed"
             />
             <p className="text-[11px] text-muted-foreground mt-1.5">
-              Chỉ cần nhập ghi chú yêu cầu tóm tắt. Bộ phận HR sẽ tiếp nhận,
-              dùng AI hỗ trợ chuẩn hóa thành JD hoàn chỉnh và gửi lại để duyệt.
+              Chỉ cần nhập ghi chú yêu cầu tóm tắt. Bộ phận HR sẽ tiếp nhận và
+              chuẩn hóa JD.
             </p>
           </div>
 
@@ -253,21 +252,22 @@ function HireRequestModal({
   );
 }
 
-// ─── Mobile Card Component ───────────────────────────────────────────────────
-function RequisitionCard({
+// ─── Table-Row Item Component For Mobile ────────────────────────────────────
+function MobileRequisitionRow({
   req,
   locale,
-  onView,
+  onQuickView,
 }: {
   req: RecruitmentRequest;
   locale: string;
-  onView: (r: RecruitmentRequest) => void;
+  onQuickView: (r: RecruitmentRequest) => void;
 }) {
+  const router = useRouter();
+  const rawReq = req as any;
+
   const statusCfg =
     REQ_STATUS_CONFIG[req.status] ||
     REQ_STATUS_CONFIG[RecruitmentRequestStatus.PENDING_HR];
-
-  const rawReq = req as any;
 
   const title =
     rawReq.jobPost?.publicTitle ||
@@ -286,46 +286,53 @@ function RequisitionCard({
 
   const headcount = rawReq.jobPost?.headcount ?? rawReq.headcount ?? 1;
   const requestCode = rawReq.requestCode;
+
   return (
     <div
-      onClick={() => onView(req)}
-      className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 active:bg-muted/50 cursor-pointer shadow-sm hover:border-primary/30 transition-colors"
+      onClick={() => router.push(`/${locale}/ats/request-management/${req.id}`)}
+      className="flex items-center justify-between py-2.5 px-3 border-b border-border/60 hover:bg-muted/20 active:bg-muted/40 transition-colors cursor-pointer group text-xs select-none"
     >
-      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold flex-shrink-0 border border-primary/20">
-        {requestCode ? requestCode.slice(-3) : title.slice(0, 2).toUpperCase()}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap mb-1">
-          <p className="text-sm font-semibold text-foreground truncate">
-            {title}
-          </p>
+      <div className="flex-1 min-w-0 pr-2.5">
+        <div className="flex items-center gap-1.5 mb-1">
+          <span className="font-mono text-[10px] font-bold text-primary">
+            #{requestCode ? requestCode.slice(-4) : "REQ"}
+          </span>
           <Badge config={statusCfg} />
         </div>
-        <p className="text-xs text-muted-foreground truncate">
-          {deptName} · SL: {headcount}
+        <p className="font-semibold text-foreground text-xs truncate leading-snug">
+          {title}
         </p>
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5 truncate">
+          <span className="truncate max-w-[130px]">{deptName}</span>
+          <span>•</span>
+          <span>{headcount} người</span>
+          <span>•</span>
+          <span>{new Date(req.createdAt || Date.now()).toLocaleDateString("vi-VN")}</span>
+        </div>
       </div>
-      <div className="flex items-center gap-1">
+
+      <div
+        className="flex items-center gap-1 shrink-0"
+        onClick={(e) => e.stopPropagation()}
+      >
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onView(req);
-          }}
-          className="p-2 rounded hover:bg-muted text-muted-foreground transition-colors"
+          type="button"
+          onClick={() => onQuickView(req)}
+          className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
           title="Xem nhanh"
         >
-          <Eye size={16} />
+          <Eye size={15} />
         </button>
-
-        <Link
-          href={`/${locale}/ats/request-management/${req.id}`}
-          onClick={(e) => e.stopPropagation()}
-          prefetch={false}
-          className="p-2 rounded hover:bg-primary/10 text-primary transition-colors inline-flex items-center justify-center"
-          title="Chi tiết Yêu cầu"
+        <button
+          type="button"
+          onClick={() =>
+            router.push(`/${locale}/ats/request-management/${req.id}`)
+          }
+          className="p-1.5 rounded-md text-muted-foreground/60 group-hover:text-primary transition-colors"
+          title="Chi tiết"
         >
-          <ExternalLink size={16} />
-        </Link>
+          <ChevronRight size={15} />
+        </button>
       </div>
     </div>
   );
@@ -339,14 +346,13 @@ export default function RecruitmentRequestsContent() {
 
   const locale = useMemo(() => pathname.split("/")[1] || "vi", [pathname]);
 
-  // Realtime Sync Listener
   useSyncAtsEventsQuery();
 
-  // State Management
   const [selectedReq, setSelectedReq] = useState<RecruitmentRequest | null>(
     null,
   );
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showMobileFilter, setShowMobileFilter] = useState(false);
 
   // Filter & Pagination States
   const [globalFilter, setGlobalFilter] = useState(searchParams.get("q") || "");
@@ -362,7 +368,6 @@ export default function RecruitmentRequestsContent() {
     pageSize: parseInt(searchParams.get("limit") || "10", 10),
   });
 
-  // Tải danh mục phòng ban cho Facet Filter
   const { data: deptFilterRes } = useGetDepartmentsQuery({
     isActive: true,
     limit: 100,
@@ -370,7 +375,6 @@ export default function RecruitmentRequestsContent() {
     sortOrder: "ASC",
   });
 
-  // ─── RTK QUERY HOOKS ───
   const {
     data: listRes,
     isLoading,
@@ -395,7 +399,6 @@ export default function RecruitmentRequestsContent() {
   const totalRows = listRes?.meta?.pagination?.total || 0;
   const pageCount = listRes?.meta?.pagination?.total_page || 1;
 
-  // Debounced URL Sync
   useEffect(() => {
     const timer = setTimeout(() => {
       const params = new URLSearchParams();
@@ -413,7 +416,6 @@ export default function RecruitmentRequestsContent() {
 
       const queryString = params.toString();
       const targetUrl = queryString ? `${pathname}?${queryString}` : pathname;
-
       router.replace(targetUrl, { scroll: false });
     }, 300);
 
@@ -428,13 +430,10 @@ export default function RecruitmentRequestsContent() {
     setPagination((prev) => ({ ...prev, pageIndex: 0 }));
   };
 
-  // ─── WORKFLOW ACTION (TẠO TỪ GHI CHÚ THÔ) ───
   const handleCreateRequest = async (formData: {
     rawRequestNote: string;
     departmentId: string;
   }) => {
-    console.log(formData.departmentId);
-
     try {
       const res = await createRequest({
         rawRequestNote: formData.rawRequestNote,
@@ -454,7 +453,6 @@ export default function RecruitmentRequestsContent() {
     }
   };
 
-  // ─── TABLE COLUMNS ───
   const columns = useMemo<ColumnDef<StockFeatures, RecruitmentRequest, any>[]>(
     () => [
       {
@@ -629,18 +627,6 @@ export default function RecruitmentRequestsContent() {
               );
             }
           }
-
-          const legacyMin = (row.original as any).targetSalaryMin;
-          const legacyMax = (row.original as any).targetSalaryMax;
-          if (legacyMin || legacyMax) {
-            return (
-              <span className="text-xs text-foreground font-medium tabular-nums">
-                {legacyMin ? `${legacyMin}M` : "0"} -{" "}
-                {legacyMax ? `${legacyMax}M` : "Max"} VNĐ
-              </span>
-            );
-          }
-
           return (
             <span className="text-xs text-muted-foreground italic">
               Thỏa thuận
@@ -684,7 +670,6 @@ export default function RecruitmentRequestsContent() {
               >
                 <Eye size={14} />
               </button>
-
               <Link
                 href={`/${locale}/ats/request-management/${req.id}`}
                 prefetch={false}
@@ -702,11 +687,10 @@ export default function RecruitmentRequestsContent() {
     [locale],
   );
 
-  // Facet Options lấy danh mục từ API phòng ban
   const deptOptions = useMemo(
     () =>
       deptFilterRes?.data?.map((d) => ({
-        value: d.id, // Giá trị lọc là UUID chuẩn của phòng ban
+        value: d.id,
         label: `[${d.code}] ${d.name}`,
         count: 0,
       })) || [],
@@ -749,7 +733,7 @@ export default function RecruitmentRequestsContent() {
       {activeFilterCount > 0 && (
         <button
           onClick={clearAllFilters}
-          className="ml-2 text-xs text-red-600 hover:underline"
+          className="ml-2 text-xs text-red-600 hover:underline cursor-pointer"
         >
           Xóa {activeFilterCount} bộ lọc
         </button>
@@ -757,32 +741,24 @@ export default function RecruitmentRequestsContent() {
     </div>
   );
 
-  const mobileFacetFiltersNode = (
-    <MobileFilterSheet
-      activeCount={activeFilterCount}
-      onClearAll={clearAllFilters}
-    >
-      {facetFiltersNode}
-    </MobileFilterSheet>
-  );
-
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* HEADER */}
+    <div className="flex flex-col h-full overflow-hidden bg-background">
+      {/* ── TOP ACTION BAR ── */}
       <div className="flex-shrink-0 px-4 md:px-5 py-3 border-b border-border bg-card">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center justify-between gap-3">
           <div>
             <h1 className="text-base md:text-lg font-bold text-foreground">
               Yêu Cầu Tuyển Dụng
             </h1>
             <p className="text-xs text-muted-foreground">
-              {totalRows} yêu cầu · Quy trình phối hợp Trưởng phòng & HR
+              {totalRows} yêu cầu · Quy trình phối hợp Trưởng phòng &amp; HR
             </p>
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <ActionButton
               variant="ghost"
-              className="hidden sm:flex !h-8 !px-3 !text-xs !font-medium"
+              className="!h-8 !px-2 sm:!px-3 !text-xs !font-medium"
               isLoading={isDataLoading}
               onAction={async () => {
                 await new Promise((r) => setTimeout(r, 1200));
@@ -790,79 +766,149 @@ export default function RecruitmentRequestsContent() {
               }}
               loadingMessage="Đang chuẩn bị file..."
               successMessage={(file) => `Đã tải xuống ${file}`}
+              title="Xuất Excel"
             >
-              <Download size={14} /> Xuất Excel
+              <Download size={14} className="shrink-0" />
+              <span className="hidden sm:inline">Xuất Excel</span>
             </ActionButton>
 
             <ActionButton
               variant="ghost"
-              className="hidden sm:flex !h-8 !px-3 !text-xs !font-medium"
+              className="!h-8 !px-2 sm:!px-3 !text-xs !font-medium"
               isLoading={isDataLoading}
               onAction={async () => {
                 await refetch();
               }}
               loadingMessage="Đang làm mới..."
               successMessage="Dữ liệu đã được cập nhật"
+              title="Làm mới"
             >
-              <RefreshCw size={14} /> Làm mới
+              <RefreshCw size={14} className="shrink-0" />
+              <span className="hidden sm:inline">Làm mới</span>
             </ActionButton>
 
             <ActionButton
               variant="primary"
-              className="!h-8 !px-3 !py-0 !text-xs"
+              className="!h-8 !px-2 sm:!px-3 !py-0 !text-xs"
               onClick={() => setShowCreateForm(true)}
+              title="Gửi yêu cầu tuyển dụng"
             >
-              <Plus size={14} />
+              <Plus size={14} className="shrink-0" />
               <span className="hidden sm:inline">Gửi yêu cầu tuyển dụng</span>
-              <span className="sm:hidden">Gửi yêu cầu</span>
             </ActionButton>
           </div>
         </div>
       </div>
 
-      {/* MOBILE LIST */}
-      <div className="flex-1 min-h-0 overflow-y-auto md:hidden px-4 py-3 space-y-2">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs text-muted-foreground">
-            {totalRows} yêu cầu
-          </span>
-          {mobileFacetFiltersNode}
-        </div>
-        <div className="relative mb-3">
-          <Search
-            size={14}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-          />
-          <input
-            type="text"
-            value={globalFilter}
-            onChange={(e) =>
-              handleFilterChange(setGlobalFilter, e.target.value)
-            }
-            placeholder="Tìm theo chức danh, nội dung..."
-            className="input-base pl-9 py-1.5 text-xs w-full"
-          />
-        </div>
-        {requestsData.length === 0 && !isDataLoading ? (
-          <div className="flex flex-col items-center gap-2 py-16">
-            <Search size={32} className="text-muted-foreground/30" />
-            <p className="text-sm font-medium text-muted-foreground">
-              Không tìm thấy yêu cầu
-            </p>
-          </div>
-        ) : (
-          requestsData.map((req: RecruitmentRequest) => (
-            <RequisitionCard
-              key={req.id}
-              req={req}
-              locale={locale}
-              onView={setSelectedReq}
+      {/* ── MOBILE LIST VIEW (< md) ── */}
+      <div className="flex-1 min-h-0 flex flex-col md:hidden overflow-hidden">
+        {/* Mobile Search & Drawer Trigger */}
+        <div className="p-3 border-b border-border bg-card flex items-center gap-2 shrink-0">
+          <div className="relative flex-1">
+            <Search
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
             />
-          ))
-        )}
+            <input
+              type="text"
+              value={globalFilter}
+              onChange={(e) =>
+                handleFilterChange(setGlobalFilter, e.target.value)
+              }
+              placeholder="Tìm theo chức danh, mã..."
+              className="input-base pl-9 pr-7 py-1 text-xs w-full h-8"
+            />
+            {globalFilter && (
+              <button
+                onClick={() => handleFilterChange(setGlobalFilter, "")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowMobileFilter(true)}
+            className={`h-8 px-2.5 rounded-lg border flex items-center justify-center gap-1.5 text-xs transition-colors shrink-0 cursor-pointer ${
+              activeFilterCount > 0
+                ? "bg-primary/10 border-primary text-primary font-semibold"
+                : "border-border bg-background text-muted-foreground hover:bg-muted"
+            }`}
+            title="Mở bộ lọc & Sắp xếp"
+          >
+            <SlidersHorizontal size={13} />
+            {activeFilterCount > 0 && (
+              <span className="w-4 h-4 rounded-full bg-primary text-white font-mono text-[9px] flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Scrollable Table-Row List */}
+        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar divide-y divide-border/40">
+          {requestsData.length === 0 && !isDataLoading ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
+              <Search size={28} className="text-muted-foreground/30" />
+              <p className="text-xs font-semibold text-muted-foreground">
+                Không tìm thấy yêu cầu nào phù hợp
+              </p>
+            </div>
+          ) : (
+            requestsData.map((req: RecruitmentRequest) => (
+              <MobileRequisitionRow
+                key={req.id}
+                req={req}
+                locale={locale}
+                onQuickView={setSelectedReq}
+              />
+            ))
+          )}
+        </div>
+
+        {/* ── MOBILE BOTTOM PAGINATION (FIXED/DOCKED) ── */}
+        <div className="shrink-0 flex items-center justify-between px-4 py-2 border-t border-border bg-card text-xs text-muted-foreground">
+          <span className="font-mono text-[11px]">
+            {pagination.pageIndex * pagination.pageSize + 1}-
+            {Math.min(
+              (pagination.pageIndex + 1) * pagination.pageSize,
+              totalRows,
+            )}{" "}
+            / {totalRows}
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              disabled={pagination.pageIndex === 0 || isDataLoading}
+              onClick={() =>
+                setPagination((p) => ({ ...p, pageIndex: p.pageIndex - 1 }))
+              }
+              className="p-1.5 rounded-md border border-border bg-background hover:bg-muted disabled:opacity-40 cursor-pointer"
+              title="Trang trước"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <span className="font-mono text-[11px] px-1 font-semibold text-foreground">
+              {pagination.pageIndex + 1}/{pageCount || 1}
+            </span>
+            <button
+              type="button"
+              disabled={pagination.pageIndex >= pageCount - 1 || isDataLoading}
+              onClick={() =>
+                setPagination((p) => ({ ...p, pageIndex: p.pageIndex + 1 }))
+              }
+              className="p-1.5 rounded-md border border-border bg-background hover:bg-muted disabled:opacity-40 cursor-pointer"
+              title="Trang sau"
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* DESKTOP DATA TABLE */}
+      {/* ── DESKTOP DATA TABLE (md:) ── */}
       <div className="flex-1 min-h-0 overflow-hidden flex-col hidden md:flex">
         <DataTable
           columns={columns}
@@ -874,13 +920,122 @@ export default function RecruitmentRequestsContent() {
           pagination={pagination}
           onPaginationChange={setPagination}
           facetFilters={facetFiltersNode}
-          mobileFacetFilters={mobileFacetFiltersNode}
           isLoading={isDataLoading}
           skeletonRowCount={8}
           enableMultiRowSelection={true}
           onRowClick={(row) => setSelectedReq(row.original)}
         />
       </div>
+
+      {/* ── BOTTOM DRAWER FOR MOBILE FILTER & SORT ── */}
+      {showMobileFilter && (
+        <div className="fixed inset-0 z-[1000] flex flex-col justify-end bg-black/50 backdrop-blur-xs md:hidden animate-in fade-in duration-200">
+          <div
+            className="w-full bg-card rounded-t-2xl border-t border-border p-4 max-h-[80vh] flex flex-col gap-4 shadow-2xl animate-in slide-in-from-bottom duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-border">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal size={16} className="text-primary" />
+                <h3 className="font-bold text-sm text-foreground">
+                  Lọc &amp; Sắp xếp
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMobileFilter(false)}
+                className="p-1 text-muted-foreground hover:text-foreground"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1 text-xs">
+              {/* Filter: Trạng thái */}
+              <div>
+                <label className="font-semibold text-foreground mb-2 block">
+                  Trạng thái
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {statusOptions.map((opt) => {
+                    const isSelected = statusFilter.includes(opt.value);
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          const next = isSelected
+                            ? statusFilter.filter((v) => v !== opt.value)
+                            : [opt.value]; // single select mode for backend consistency
+                          handleFilterChange(setStatusFilter, next);
+                        }}
+                        className={`px-2.5 py-1 rounded-full border text-[11px] font-medium transition-all ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-muted/40 border-border text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Filter: Phòng ban */}
+              <div>
+                <label className="font-semibold text-foreground mb-2 block">
+                  Phòng ban
+                </label>
+                <div className="space-y-1 max-h-40 overflow-y-auto border border-border/60 rounded-lg p-2 bg-muted/10">
+                  {deptOptions.map((d) => {
+                    const isSelected = deptFilter.includes(d.value);
+                    return (
+                      <div
+                        key={d.value}
+                        onClick={() => {
+                          const next = isSelected
+                            ? deptFilter.filter((v) => v !== d.value)
+                            : [d.value];
+                          handleFilterChange(setDeptFilter, next);
+                        }}
+                        className={`flex items-center justify-between p-1.5 rounded cursor-pointer transition-colors text-xs ${
+                          isSelected
+                            ? "bg-primary/10 text-primary font-semibold"
+                            : "hover:bg-muted/50 text-foreground"
+                        }`}
+                      >
+                        <span className="truncate">{d.label}</span>
+                        {isSelected && <Check size={13} />}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Bottom Actions */}
+            <div className="flex items-center gap-2 pt-2 border-t border-border">
+              {activeFilterCount > 0 && (
+                <button
+                  type="button"
+                  onClick={clearAllFilters}
+                  className="btn-secondary text-xs h-9 px-3 text-red-600"
+                >
+                  Xóa tất cả
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowMobileFilter(false)}
+                className="btn-primary text-xs h-9 flex-1"
+              >
+                Áp dụng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* DRAWER XEM NHANH */}
       {selectedReq && (

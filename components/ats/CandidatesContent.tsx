@@ -20,23 +20,23 @@ import {
   Upload,
   Link as LinkIcon,
   FileText,
-  Sparkles,
   Clock,
   Mail,
   Phone,
-  Calendar,
-  AlertTriangle,
   FileX,
   BrainCircuit,
   Briefcase,
+  ChevronLeft,
+  ChevronRight,
+  SlidersHorizontal,
+  Check,
 } from "lucide-react";
 
 import {
   DataTable,
   SortHeader,
   FacetFilter,
-  MobileFilterSheet,
-  TriStateCheckbox,
+  TriStateCheckbox,MobileFilterSheet,
 } from "@/components/ui/DataTable";
 import ActionButton from "@/components/buttons/ActionButton";
 import { gooeyToast } from "@/components/ui/goey-toaster";
@@ -64,44 +64,44 @@ const APPLICATION_STATUS_CONFIG: Record<
 > = {
   [ApplicationStatus.APPLIED]: {
     label: "Mới nộp CV",
-    className: "bg-slate-100 text-slate-700 border-slate-200 ",
+    className: "bg-slate-100 text-slate-700 border-slate-200",
   },
   [ApplicationStatus.AI_SCREENING]: {
     label: "Đang sàng lọc AI",
-    className: "bg-amber-100 text-amber-700 border-amber-200 ",
+    className: "bg-amber-100 text-amber-700 border-amber-200",
   },
   [ApplicationStatus.SCREENING_FAILED]: {
     label: "Lỗi sàng lọc",
-    className: "bg-orange-100 text-orange-800 border-orange-300 font-semibold ",
+    className: "bg-orange-100 text-orange-800 border-orange-300 font-semibold",
   },
   [ApplicationStatus.SHORTLISTED]: {
     label: "Xuất sắc (Tier 1)",
     className:
-      "bg-emerald-100 text-emerald-800 border-emerald-300 font-semibold ",
+      "bg-emerald-100 text-emerald-800 border-emerald-300 font-semibold",
   },
   [ApplicationStatus.SAVED_POOL]: {
     label: "Kho tiềm năng (Tier 2)",
-    className: "bg-blue-100 text-blue-700 border-blue-200 ",
+    className: "bg-blue-100 text-blue-700 border-blue-200",
   },
   [ApplicationStatus.SCREENING_REJECTED]: {
     label: "Không đạt (Tier 3)",
-    className: "bg-rose-100 text-rose-700 border-rose-200 ",
+    className: "bg-rose-100 text-rose-700 border-rose-200",
   },
   [ApplicationStatus.INTERVIEWING]: {
     label: "Phỏng vấn",
-    className: "bg-purple-100 text-purple-700 border-purple-200 font-semibold ",
+    className: "bg-purple-100 text-purple-700 border-purple-200 font-semibold",
   },
   [ApplicationStatus.OFFERED]: {
     label: "Đề nghị tuyển dụng",
-    className: "bg-indigo-100 text-indigo-700 border-indigo-200 ",
+    className: "bg-indigo-100 text-indigo-700 border-indigo-200",
   },
   [ApplicationStatus.HIRED]: {
     label: "Đã tuyển dụng",
-    className: "bg-teal-100 text-teal-800 border-teal-300 font-semibold ",
+    className: "bg-teal-100 text-teal-800 border-teal-300 font-semibold",
   },
   [ApplicationStatus.WITHDRAWN]: {
     label: "Rút hồ sơ",
-    className: "bg-gray-100 text-gray-500 border-gray-200 italic ",
+    className: "bg-gray-100 text-gray-500 border-gray-200 italic",
   },
 };
 
@@ -234,9 +234,6 @@ function AddManualCandidateModal({
       const cleanProfile = normalizeUrl(profileUrl);
       const isLinkedIn = cleanProfile?.toLowerCase().includes("linkedin.com");
 
-      // Gửi file CV thật kèm theo trong CÙNG 1 request multipart - backend tự upload lên S3
-      // và trả về fileKey/cvUrl thật. Không tự đoán/tạo fileKey ở FE để tránh submit CV "ma"
-      // (chưa từng tồn tại trên storage) khi có lỗi mạng.
       const formData = new FormData();
       formData.append("cvFile", cvFile);
       formData.append("jobPostId", jobPostId);
@@ -481,6 +478,114 @@ function AddManualCandidateModal({
   );
 }
 
+// ─── Table-Row Styled Mobile Item ────────────────────────────────────────────
+function MobileCandidateRow({
+  candidate,
+  locale,
+  onQuickView,
+}: {
+  candidate: Candidate;
+  locale: string;
+  onQuickView: (id: string) => void;
+}) {
+  const router = useRouter();
+  const apps = candidate.applications || [];
+  const latestApp = apps[0];
+  const latestSub = latestApp?.submissions?.[0];
+  const submissionDate = latestSub?.createdAt || latestApp?.createdAt;
+  const isPurged = Boolean(latestSub?.isCvPurged);
+
+  const statusInfo =
+    APPLICATION_STATUS_CONFIG[
+      (latestApp?.status as ApplicationStatus) || ApplicationStatus.APPLIED
+    ];
+
+  const pCfg =
+    PLATFORM_CONFIG[latestSub?.platformSource as PlatformSource] ||
+    PLATFORM_CONFIG[PlatformSource.MANUAL_ENTRY];
+
+  const score = latestApp?.aiScore;
+  const hasAiScore = typeof score === "number" && score >= 0;
+
+  const tierBg =
+    latestApp?.aiTier === AiScreeningTier.HIGH || (score && score >= 80)
+      ? "bg-emerald-500 text-white"
+      : latestApp?.aiTier === AiScreeningTier.MEDIUM || (score && score >= 50)
+        ? "bg-amber-500 text-white"
+        : "bg-rose-500 text-white";
+
+  return (
+    <div
+      onClick={() => router.push(`/${locale}/ats/candidate-management/${candidate.id}`)}
+      className="flex items-center justify-between py-2.5 px-3 border-b border-border/60 hover:bg-muted/20 active:bg-muted/40 transition-colors cursor-pointer group text-xs select-none"
+    >
+      <div className="flex-1 min-w-0 pr-2.5">
+        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+          <span className="font-mono text-[10px] font-bold text-primary">
+            UV-{candidate.id.slice(-4).toUpperCase()}
+          </span>
+          <span
+            className={`px-1.5 py-0.2 rounded font-mono font-bold text-[9px] ${
+              hasAiScore ? tierBg : "bg-muted text-muted-foreground"
+            }`}
+          >
+            {hasAiScore ? `${score}% AI` : "N/A"}
+          </span>
+          <span className={`badge ${statusInfo.className} text-[9px] px-1.5 py-0.2 border`}>
+            {statusInfo.label}
+          </span>
+        </div>
+
+        <p className="font-semibold text-foreground text-xs truncate leading-snug">
+          {candidate.fullName}
+        </p>
+
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5 truncate">
+          <span className="truncate max-w-[120px]">
+            {latestApp?.jobPost?.publicTitle || "Chưa gán tin"}
+          </span>
+          <span>•</span>
+          <span className={`px-1 rounded text-[9px] font-medium ${pCfg.bg} ${pCfg.text}`}>
+            {pCfg.label}
+          </span>
+          {submissionDate && (
+            <>
+              <span>•</span>
+              <span className="font-mono">
+                {new Date(submissionDate).toLocaleDateString("vi-VN")}
+              </span>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div
+        className="flex items-center gap-1 shrink-0"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={() => onQuickView(candidate.id)}
+          className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+          title="Xem nhanh"
+        >
+          <Eye size={15} />
+        </button>
+        <button
+          type="button"
+          onClick={() =>
+            router.push(`/${locale}/ats/candidate-management/${candidate.id}`)
+          }
+          className="p-1.5 rounded-md text-muted-foreground/60 group-hover:text-primary transition-colors"
+          title="Chi tiết"
+        >
+          <ChevronRight size={15} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function CandidatesContent() {
   const router = useRouter();
   const pathname = usePathname();
@@ -494,6 +599,7 @@ export default function CandidatesContent() {
     null,
   );
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showMobileFilter, setShowMobileFilter] = useState(false);
 
   const [globalFilter, setGlobalFilter] = useState(searchParams.get("q") || "");
   const [statusFilter, setStatusFilter] = useState<string[]>(
@@ -574,7 +680,6 @@ export default function CandidatesContent() {
 
       const queryString = params.toString();
       const targetUrl = queryString ? `${pathname}?${queryString}` : pathname;
-
       router.replace(targetUrl, { scroll: false });
     }, 300);
 
@@ -721,13 +826,13 @@ export default function CandidatesContent() {
                   {cfg.label}
                 </span>
                 {isPurged && (
-                  <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-rose-600 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-200 ">
+                  <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-rose-600 bg-rose-50 px-1.5 py-0.2 rounded border border-rose-200">
                     <FileX size={9} /> Đã xóa S3
                   </span>
                 )}
                 {!isPurged && latestSub?.cvPurgeAt && (
                   <span
-                    className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200 "
+                    className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200"
                     title={`CV sẽ tự động bị xóa vào ${new Date(
                       latestSub.cvPurgeAt,
                     ).toLocaleDateString("vi-VN")}`}
@@ -969,17 +1074,18 @@ export default function CandidatesContent() {
     </div>
   );
 
-  const mobileFacetFiltersNode = (
-    <MobileFilterSheet
-      activeCount={activeFilterCount}
-      onClearAll={clearAllFilters}
-    >
-      {facetFiltersNode}
-    </MobileFilterSheet>
-  );
+  // const mobileFacetFiltersNode = (
+  //   <MobileFilterSheet
+  //     activeCount={activeFilterCount}
+  //     onClearAll={clearAllFilters}
+  //   >
+  //     {facetFiltersNode}
+  //   </MobileFilterSheet>
+  // );
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden bg-background">
+      {/* ── TOP ACTION BAR ── */}
       <div className="flex-shrink-0 px-4 md:px-5 py-3 border-b border-border bg-card">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
@@ -987,15 +1093,14 @@ export default function CandidatesContent() {
               Quản Lý Ứng Viên
             </h1>
             <p className="text-xs text-muted-foreground">
-              {totalRows} ứng viên · Theo dõi hồ sơ, nguồn nộp &amp; quy trình
-              phỏng vấn
+              {totalRows} ứng viên · Theo dõi hồ sơ, nguồn nộp &amp; quy trình phỏng vấn
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <ActionButton
               variant="ghost"
-              className="hidden sm:flex !h-8 !px-3 !text-xs !font-medium"
+              className="!h-8 !px-2 sm:!px-3 !text-xs !font-medium"
               isLoading={isDataLoading}
               onAction={async () => {
                 await new Promise((r) => setTimeout(r, 1000));
@@ -1003,239 +1108,145 @@ export default function CandidatesContent() {
               }}
               loadingMessage="Đang xuất file..."
               successMessage={(f) => `Đã xuất ${f}`}
+              title="Xuất Excel"
             >
-              <Download size={14} /> Xuất Excel
+              <Download size={14} className="shrink-0" />
+              <span className="hidden sm:inline">Xuất Excel</span>
             </ActionButton>
 
             <ActionButton
               variant="ghost"
-              className="hidden sm:flex !h-8 !px-3 !text-xs !font-medium"
+              className="!h-8 !px-2 sm:!px-3 !text-xs !font-medium"
               isLoading={isDataLoading}
               onAction={async () => {
                 await refetch();
               }}
               loadingMessage="Đang làm mới..."
               successMessage="Dữ liệu đã cập nhật"
+              title="Làm mới"
             >
-              <RefreshCw size={14} /> Làm mới
+              <RefreshCw size={14} className="shrink-0" />
+              <span className="hidden sm:inline">Làm mới</span>
             </ActionButton>
 
             <ActionButton
               variant="primary"
-              className="!h-8 !px-3 !py-0 !text-xs"
+              className="!h-8 !px-2 sm:!px-3 !py-0 !text-xs"
               onClick={() => setShowAddModal(true)}
+              title="Thêm ứng viên"
             >
-              <Plus size={14} />
+              <Plus size={14} className="shrink-0" />
               <span className="hidden sm:inline">Thêm ứng viên</span>
-              <span className="sm:hidden">Thêm</span>
             </ActionButton>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto md:hidden px-4 py-3 space-y-2.5">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs text-muted-foreground">
-            {totalRows} ứng viên
-          </span>
-          {mobileFacetFiltersNode}
-        </div>
-        <div className="relative mb-3">
-          <Search
-            size={14}
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-          />
-          <input
-            type="text"
-            value={globalFilter}
-            onChange={(e) =>
-              handleFilterChange(setGlobalFilter, e.target.value)
-            }
-            placeholder="Tìm theo tên, email, kỹ năng..."
-            className="input-base pl-9 py-1.5 text-xs w-full"
-          />
-        </div>
-        {candidatesData.length === 0 && !isDataLoading ? (
-          <div className="flex flex-col items-center gap-2 py-16">
-            <Search size={32} className="text-muted-foreground/30" />
-            <p className="text-sm font-medium text-muted-foreground">
-              Không tìm thấy ứng viên
-            </p>
-          </div>
-        ) : (
-          candidatesData.map((c: Candidate) => {
-            const latestApp = c.applications?.[0];
-            const latestSub = latestApp?.submissions?.[0];
-            const submissionDate = latestSub?.createdAt || latestApp?.createdAt;
-            const isPurged = Boolean(latestSub?.isCvPurged);
-
-            const statusInfo =
-              APPLICATION_STATUS_CONFIG[
-                (latestApp?.status as ApplicationStatus) ||
-                  ApplicationStatus.APPLIED
-              ];
-
-            const pCfg =
-              PLATFORM_CONFIG[latestSub?.platformSource as PlatformSource] ||
-              PLATFORM_CONFIG[PlatformSource.MANUAL_ENTRY];
-
-            const score = latestApp?.aiScore;
-            const hasAiScore = typeof score === "number" && score >= 0;
-
-            const tierBg =
-              latestApp?.aiTier === AiScreeningTier.HIGH ||
-              (score && score >= 80)
-                ? "bg-emerald-500 text-white"
-                : latestApp?.aiTier === AiScreeningTier.MEDIUM ||
-                    (score && score >= 50)
-                  ? "bg-amber-500 text-white"
-                  : "bg-rose-500 text-white";
-
-            return (
-              <div
-                key={c.id}
-                onClick={() => setSelectedCandidateId(c.id)}
-                className="bg-card border border-border/70 rounded-xl p-3.5 space-y-3 cursor-pointer hover:border-primary/40 transition-colors shadow-2xs"
+      {/* ── MOBILE LIST VIEW (< md) ── */}
+      <div className="flex-1 min-h-0 flex flex-col md:hidden overflow-hidden">
+        {/* Search & Filter Trigger Bar */}
+        <div className="p-3 border-b border-border bg-card flex items-center gap-2 shrink-0">
+          <div className="relative flex-1">
+            <Search
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+            />
+            <input
+              type="text"
+              value={globalFilter}
+              onChange={(e) =>
+                handleFilterChange(setGlobalFilter, e.target.value)
+              }
+              placeholder="Tìm theo tên, email, kỹ năng..."
+              className="input-base pl-9 pr-7 py-1 text-xs w-full h-8"
+            />
+            {globalFilter && (
+              <button
+                onClick={() => handleFilterChange(setGlobalFilter, "")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs border border-primary/20 shrink-0">
-                      {c.fullName ? c.fullName.slice(0, 2).toUpperCase() : "UV"}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-bold text-xs text-foreground truncate">
-                        {c.fullName}
-                      </p>
-                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5 flex-wrap">
-                        {c.email && (
-                          <span className="flex items-center gap-1 truncate">
-                            <Mail size={10} /> {c.email}
-                          </span>
-                        )}
-                        {c.phoneNumber && (
-                          <span className="font-mono flex items-center gap-0.5 shrink-0">
-                            <Phone size={9} /> {c.phoneNumber}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                <X size={13} />
+              </button>
+            )}
+          </div>
 
-                  <span
-                    className={`badge ${statusInfo.className} text-[10px] shrink-0 border`}
-                  >
-                    {statusInfo.label}
-                  </span>
-                </div>
+          <button
+            type="button"
+            onClick={() => setShowMobileFilter(true)}
+            className={`h-8 px-2.5 rounded-lg border flex items-center justify-center gap-1.5 text-xs transition-colors shrink-0 cursor-pointer ${
+              activeFilterCount > 0
+                ? "bg-primary/10 border-primary text-primary font-semibold"
+                : "border-border bg-background text-muted-foreground hover:bg-muted"
+            }`}
+            title="Mở bộ lọc & Sắp xếp"
+          >
+            <SlidersHorizontal size={13} />
+            {activeFilterCount > 0 && (
+              <span className="w-4 h-4 rounded-full bg-primary text-white font-mono text-[9px] flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+        </div>
 
-                {latestApp && (
-                  <div className="space-y-1.5 pt-2 border-t border-border/40 text-[11px]">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 truncate">
-                        <Briefcase
-                          size={11}
-                          className="text-muted-foreground shrink-0"
-                        />
-                        <span className="font-medium text-foreground truncate">
-                          {latestApp.jobPost?.publicTitle ||
-                            "Bản tin tuyển dụng"}
-                        </span>
-                      </div>
-                      <span className="font-mono text-[9px] font-bold text-primary bg-primary/10 px-1.5 py-0.2 rounded border border-primary/20 shrink-0">
-                        {latestApp.jobPost?.jobCode || "JOB"}
-                      </span>
-                    </div>
+        {/* Scrollable Table-Row List */}
+        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar divide-y divide-border/40">
+          {candidatesData.length === 0 && !isDataLoading ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
+              <Search size={28} className="text-muted-foreground/30" />
+              <p className="text-xs font-semibold text-muted-foreground">
+                Không tìm thấy ứng viên nào phù hợp
+              </p>
+            </div>
+          ) : (
+            candidatesData.map((c: Candidate) => (
+              <MobileCandidateRow
+                key={c.id}
+                candidate={c}
+                locale={locale}
+                onQuickView={setSelectedCandidateId}
+              />
+            ))
+          )}
+        </div>
 
-                    <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-0.5">
-                      <div className="flex items-center gap-1.5">
-                        <span
-                          className={`px-1.5 py-0.2 rounded font-bold ${pCfg.bg} ${pCfg.text}`}
-                        >
-                          {pCfg.label}
-                        </span>
-                        {isPurged && (
-                          <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-rose-600 bg-rose-50  px-1.5 py-0.2 rounded border border-rose-200">
-                            <FileX size={9} /> Đã xóa S3
-                          </span>
-                        )}
-                        {!isPurged && latestSub?.cvPurgeAt && (
-                          <span
-                            className="inline-flex items-center gap-0.5 text-[9px] font-semibold text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200"
-                            title={`CV sẽ tự động bị xóa vào ${new Date(
-                              latestSub.cvPurgeAt,
-                            ).toLocaleDateString("vi-VN")}`}
-                          >
-                            <Clock size={9} /> Sắp xóa
-                          </span>
-                        )}
-                      </div>
-
-                      {submissionDate && (
-                        <span className="font-mono flex items-center gap-1">
-                          <Clock size={10} />
-                          {new Date(submissionDate).toLocaleDateString("vi-VN")}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between pt-2 border-t border-border/40 text-[10px]">
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={`font-mono font-bold px-1.5 py-0.5 rounded ${
-                        hasAiScore ? tierBg : "bg-muted text-muted-foreground"
-                      }`}
-                    >
-                      {hasAiScore ? `${score}%` : "N/A"}
-                    </span>
-                    <span className="text-muted-foreground">
-                      {c.applications?.length || 0} lượt nộp
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const params = new URLSearchParams();
-                        if (latestApp?.id) params.set("appId", latestApp.id);
-                        if (latestSub?.id)
-                          params.set("submissionId", latestSub.id);
-                        const q = params.toString()
-                          ? `?${params.toString()}`
-                          : "";
-                        router.push(
-                          `/${locale}/ats/candidate-management/${c.id}/cv${q}`,
-                        );
-                      }}
-                      className="p-1.5 rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors cursor-pointer border border-primary/20"
-                      title="Thẩm định CV & Đánh giá AI"
-                    >
-                      <FileText size={12} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        router.push(
-                          `/${locale}/ats/candidate-management/${c.id}`,
-                        );
-                      }}
-                      className="p-1.5 rounded bg-muted hover:bg-muted/80 text-foreground transition-colors cursor-pointer"
-                      title="Chi tiết hồ sơ"
-                    >
-                      <ExternalLink size={12} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        )}
+        {/* ── MOBILE BOTTOM PAGINATION (DOCKED) ── */}
+        <div className="shrink-0 flex items-center justify-between px-4 py-2 border-t border-border bg-card text-xs text-muted-foreground">
+          <span className="font-mono text-[11px]">
+            {pagination.pageIndex * pagination.pageSize + 1}-
+            {Math.min((pagination.pageIndex + 1) * pagination.pageSize, totalRows)} / {totalRows}
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              disabled={pagination.pageIndex === 0 || isDataLoading}
+              onClick={() =>
+                setPagination((p) => ({ ...p, pageIndex: p.pageIndex - 1 }))
+              }
+              className="p-1.5 rounded-md border border-border bg-background hover:bg-muted disabled:opacity-40 cursor-pointer"
+              title="Trang trước"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <span className="font-mono text-[11px] px-1 font-semibold text-foreground">
+              {pagination.pageIndex + 1}/{pageCount || 1}
+            </span>
+            <button
+              type="button"
+              disabled={pagination.pageIndex >= pageCount - 1 || isDataLoading}
+              onClick={() =>
+                setPagination((p) => ({ ...p, pageIndex: p.pageIndex + 1 }))
+              }
+              className="p-1.5 rounded-md border border-border bg-background hover:bg-muted disabled:opacity-40 cursor-pointer"
+              title="Trang sau"
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
       </div>
 
+      {/* ── DESKTOP DATA TABLE (md:) ── */}
       <div className="flex-1 min-h-0 overflow-hidden flex-col hidden md:flex">
         <DataTable
           columns={columns}
@@ -1247,7 +1258,7 @@ export default function CandidatesContent() {
           pagination={pagination}
           onPaginationChange={setPagination}
           facetFilters={facetFiltersNode}
-          mobileFacetFilters={mobileFacetFiltersNode}
+          // mobileFacetFilters={mobileFacetFiltersNode}
           isLoading={isDataLoading}
           skeletonRowCount={8}
           enableMultiRowSelection={true}
@@ -1255,6 +1266,148 @@ export default function CandidatesContent() {
         />
       </div>
 
+      {/* ── BOTTOM DRAWER FOR MOBILE FILTER & SORT ── */}
+      {showMobileFilter && (
+        <div className="fixed inset-0 z-[1000] flex flex-col justify-end bg-black/50 backdrop-blur-xs md:hidden animate-in fade-in duration-200">
+          <div
+            className="w-full bg-card rounded-t-2xl border-t border-border p-4 max-h-[82vh] flex flex-col gap-4 shadow-2xl animate-in slide-in-from-bottom duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-border">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal size={16} className="text-primary" />
+                <h3 className="font-bold text-sm text-foreground">
+                  Lọc &amp; Sắp xếp ứng viên
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMobileFilter(false)}
+                className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1 text-xs custom-scrollbar">
+              {/* Filter: Vị trí tuyển dụng */}
+              <div>
+                <label className="font-semibold text-foreground mb-2 block">
+                  Vị trí tuyển dụng
+                </label>
+                <div className="space-y-1 max-h-36 overflow-y-auto border border-border/60 rounded-lg p-2 bg-muted/10">
+                  {jobPostOptions.map((j) => {
+                    const isSelected = jobPostFilter.includes(j.value);
+                    return (
+                      <div
+                        key={j.value}
+                        onClick={() => {
+                          const next = isSelected
+                            ? jobPostFilter.filter((v) => v !== j.value)
+                            : [j.value];
+                          handleFilterChange(setJobPostFilter, next);
+                        }}
+                        className={`flex items-center justify-between p-1.5 rounded cursor-pointer transition-colors text-xs ${
+                          isSelected
+                            ? "bg-primary/10 text-primary font-semibold"
+                            : "hover:bg-muted/50 text-foreground"
+                        }`}
+                      >
+                        <span className="truncate">{j.label}</span>
+                        {isSelected && <Check size={13} />}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Filter: Nguồn ứng tuyển */}
+              <div>
+                <label className="font-semibold text-foreground mb-2 block">
+                  Nguồn ứng tuyển
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {platformOptions.map((opt) => {
+                    const isSelected = platformFilter.includes(opt.value);
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          const next = isSelected
+                            ? platformFilter.filter((v) => v !== opt.value)
+                            : [opt.value];
+                          handleFilterChange(setPlatformFilter, next);
+                        }}
+                        className={`px-2.5 py-1 rounded-full border text-[11px] font-medium transition-all ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-muted/40 border-border text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Filter: Vòng tuyển dụng */}
+              <div>
+                <label className="font-semibold text-foreground mb-2 block">
+                  Vòng tuyển dụng (Trạng thái)
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {statusOptions.map((opt) => {
+                    const isSelected = statusFilter.includes(opt.value);
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          const next = isSelected
+                            ? statusFilter.filter((v) => v !== opt.value)
+                            : [opt.value];
+                          handleFilterChange(setStatusFilter, next);
+                        }}
+                        className={`px-2.5 py-1 rounded-full border text-[11px] font-medium transition-all ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-muted/40 border-border text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="flex items-center gap-2 pt-2 border-t border-border">
+              {activeFilterCount > 0 && (
+                <button
+                  type="button"
+                  onClick={clearAllFilters}
+                  className="btn-secondary text-xs h-9 px-3 text-red-600 cursor-pointer"
+                >
+                  Xóa tất cả
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowMobileFilter(false)}
+                className="btn-primary text-xs h-9 flex-1 cursor-pointer"
+              >
+                Áp dụng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DRAWER XEM NHANH */}
       <CandidateDrawer
         candidateId={selectedCandidateId}
         isOpen={Boolean(selectedCandidateId)}
@@ -1262,6 +1415,7 @@ export default function CandidatesContent() {
         locale={locale}
       />
 
+      {/* MODAL THÊM ỨNG VIÊN THỦ CÔNG */}
       {showAddModal && (
         <AddManualCandidateModal
           jobPosts={rawJobPosts}

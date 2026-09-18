@@ -492,7 +492,9 @@ export default function RegisterPage() {
             <button
               type="button"
               tabIndex={7}
-              className="w-full flex items-center justify-center gap-3 py-2.5 bg-card border border-border rounded-xl hover:bg-muted transition-colors active:scale-[0.98]"
+              aria-disabled="true"
+              onClick={() => gooeyToast.info("future implement")}
+              className="w-full flex items-center justify-center gap-3 py-2.5 bg-card border border-border rounded-xl opacity-50 cursor-not-allowed"
             >
               <svg viewBox="0 0 24 24" className="w-4 h-4">
                 <path

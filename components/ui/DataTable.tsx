@@ -450,6 +450,7 @@ export interface DataTableProps<TData extends Record<string, any>> {
   enableMultiRowSelection?: boolean;
   emptyMessage?: string;
   emptyIcon?: React.ReactNode;
+  searchPlaceholder?: string;
 }
 
 export function DataTable<TData extends Record<string, any>>({
@@ -473,6 +474,7 @@ export function DataTable<TData extends Record<string, any>>({
   enableMultiRowSelection = false,
   emptyMessage,
   emptyIcon,
+  searchPlaceholder,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -544,7 +546,7 @@ export function DataTable<TData extends Record<string, any>>({
               type="text"
               value={globalFilter ?? ""}
               onChange={(e) => onGlobalFilterChange(e.target.value)}
-              placeholder="Tìm kiếm..."
+              placeholder={searchPlaceholder || "Tìm kiếm..."}
               className="w-full pl-8 pr-3 py-1.5 text-xs border border-border rounded bg-background focus:outline-none focus:ring-1 focus:ring-ring transition-all"
             />
           </div>

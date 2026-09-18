@@ -12,7 +12,6 @@ import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { DateRange } from "react-day-picker";
 import {
-  Search,
   X,
   Calendar as CalendarIcon,
   ShieldAlert,
@@ -35,6 +34,10 @@ import {
   Timer,
   Send,
   Boxes,
+  SlidersHorizontal,
+  ChevronLeft,
+  ChevronRight,
+  Search,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -52,7 +55,6 @@ import {
   DataTable,
   SortHeader,
   FacetFilter,
-  MobileFilterSheet,
   TriStateCheckbox,
 } from "@/components/ui/DataTable";
 import { DetailLayout } from "@/components/layouts/DetailLayout";
@@ -202,16 +204,18 @@ function Badge({
   if (!config) return <span className="badge badge-neutral">{label}</span>;
   const Icon = config.icon;
   return (
-    <span className={`badge ${config.className}`}>
-      {Icon && <Icon size={12} />}
+    <span
+      className={`badge ${config.className} inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5`}
+    >
+      {Icon && <Icon size={11} />}
       {config.label || label}
     </span>
   );
 }
 
-// ─── ACTION MODAL DIALOGS (WITH DTO CONSTRAINTS) ────────────────────────────
+// ─── ACTION MODALS ──────────────────────────────────────────────────────────
 
-// 1. Modal Lên lịch họp (ScheduleTicketMeetingDto)
+// 1. Schedule Meeting Modal
 function ScheduleMeetingModal({
   isOpen,
   onClose,
@@ -249,7 +253,7 @@ function ScheduleMeetingModal({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-muted text-muted-foreground"
+            className="p-1 rounded hover:bg-muted text-muted-foreground cursor-pointer"
           >
             <X size={16} />
           </button>
@@ -335,7 +339,7 @@ function ScheduleMeetingModal({
   );
 }
 
-// 2. Modal Phê duyệt & Giải quyết (ResolveTicketDto: min 10 chars)
+// 2. Resolve Ticket Modal
 function ResolveTicketModal({
   isOpen,
   onClose,
@@ -361,7 +365,7 @@ function ResolveTicketModal({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-muted text-muted-foreground"
+            className="p-1 rounded hover:bg-muted text-muted-foreground cursor-pointer"
           >
             <X size={16} />
           </button>
@@ -414,7 +418,7 @@ function ResolveTicketModal({
   );
 }
 
-// 3. Modal Từ chối tiếp nhận (RejectTicketDto: min 10 chars)
+// 3. Reject Ticket Modal
 function RejectTicketModal({
   isOpen,
   onClose,
@@ -440,7 +444,7 @@ function RejectTicketModal({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-muted text-muted-foreground"
+            className="p-1 rounded hover:bg-muted text-muted-foreground cursor-pointer"
           >
             <X size={16} />
           </button>
@@ -493,7 +497,7 @@ function RejectTicketModal({
   );
 }
 
-// 4. Modal Mở lại phiếu (Reopen Reason)
+// 4. Reopen Ticket Modal
 function ReopenTicketModal({
   isOpen,
   onClose,
@@ -519,7 +523,7 @@ function ReopenTicketModal({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-muted text-muted-foreground"
+            className="p-1 rounded hover:bg-muted text-muted-foreground cursor-pointer"
           >
             <X size={16} />
           </button>
@@ -572,7 +576,7 @@ function ReopenTicketModal({
   );
 }
 
-// 5. Modal Tiếp nhận / Phân công (AssignTicketDto)
+// 5. Assign Ticket Modal
 function AssignTicketModal({
   isOpen,
   onClose,
@@ -604,7 +608,7 @@ function AssignTicketModal({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-muted text-muted-foreground"
+            className="p-1 rounded hover:bg-muted text-muted-foreground cursor-pointer"
           >
             <X size={16} />
           </button>
@@ -667,7 +671,7 @@ function AssignTicketModal({
   );
 }
 
-// 6. Modal Tạo Ticket mới (CreateTicketDto)
+// 6. Create Ticket Modal
 function CreateTicketModal({
   isOpen,
   onClose,
@@ -722,7 +726,7 @@ function CreateTicketModal({
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-muted text-muted-foreground"
+            className="p-1 rounded hover:bg-muted text-muted-foreground cursor-pointer"
           >
             <X size={16} />
           </button>
@@ -900,7 +904,7 @@ function CreateTicketModal({
             <ActionButton
               variant="secondary"
               onClick={onClose}
-              className="text-xs px-4"
+              className="text-xs px-4 cursor-pointer"
               disabled={isLoading}
             >
               Hủy
@@ -908,13 +912,415 @@ function CreateTicketModal({
             <ActionButton
               variant="primary"
               type="submit"
-              className="text-xs px-5"
+              className="text-xs px-5 cursor-pointer"
               isLoading={isLoading}
             >
               <Send size={13} className="mr-1.5" /> Gửi phiếu vào Queue
             </ActionButton>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── REUSABLE DETAIL PANE (DESKTOP SIDEBAR & MOBILE DRAWER) ──────────────────
+function TicketDetailPane({
+  ticket,
+  onAssign,
+  onSchedule,
+  onResolve,
+  onReject,
+  onCloseAction,
+  onReopen,
+  isAssigning,
+  isScheduling,
+  isResolving,
+  isRejecting,
+  isClosing,
+  isReopening,
+}: {
+  ticket: Ticket;
+  onAssign: () => void;
+  onSchedule: () => void;
+  onResolve: () => void;
+  onReject: () => void;
+  onCloseAction: () => void;
+  onReopen: () => void;
+  isAssigning: boolean;
+  isScheduling: boolean;
+  isResolving: boolean;
+  isRejecting: boolean;
+  isClosing: boolean;
+  isReopening: boolean;
+}) {
+  const catCfg = CATEGORY_CONFIG[ticket.category];
+  const prioCfg = PRIORITY_CONFIG[ticket.priority];
+  const statusCfg = STATUS_CONFIG[ticket.status];
+  const meetings = ticket.meetings || [];
+  const latestMeeting =
+    meetings.length > 0 ? meetings[meetings.length - 1] : null;
+
+  return (
+    <div className="flex flex-col h-full fade-in bg-card">
+      {/* Header Pane */}
+      <div className="p-5 border-b border-border/50 relative shrink-0 bg-muted/10">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Badge config={catCfg} label={ticket.category} />
+            <Badge config={prioCfg} label={ticket.priority} />
+            <Badge config={statusCfg} label={ticket.status} />
+          </div>
+          <span className="font-mono text-xs font-bold text-primary">
+            {ticket.ticketCode}
+          </span>
+        </div>
+
+        <h2 className="text-base font-bold text-foreground leading-snug mb-3">
+          {ticket.title}
+        </h2>
+
+        {/* Routing Pipeline Strip */}
+        <div className="flex items-center justify-between p-2.5 rounded-lg bg-background border border-border/60 text-xs">
+          <div>
+            <span className="text-[10px] text-muted-foreground uppercase block font-semibold">
+              Khởi tạo bởi
+            </span>
+            <span className="font-semibold text-foreground">
+              {ticket.requesterDepartmentId}
+            </span>
+            <span className="text-[10px] text-muted-foreground block font-mono">
+              ID: {ticket.requesterId.slice(0, 8)}
+            </span>
+          </div>
+          <ArrowRight size={14} className="text-muted-foreground/60" />
+          <div className="text-right">
+            <span className="text-[10px] text-muted-foreground uppercase block font-semibold">
+              Đích tiếp nhận
+            </span>
+            <span className="font-semibold text-primary">
+              {ticket.targetDepartmentId}
+            </span>
+            <span className="text-[10px] text-muted-foreground block">
+              {ticket.assigneeId
+                ? `Giao cho: ${ticket.assigneeId.slice(0, 8)}`
+                : "Hàng đợi chung"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Body Pane */}
+      <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
+        {/* Contextual ERP Link */}
+        {ticket.targetEntityType && (
+          <div className="px-5 py-4 border-b border-border/50 bg-card">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
+              <FolderGit2 size={12} /> Thực thể dữ liệu liên kết
+            </p>
+            <div className="flex items-center justify-between p-3 rounded-lg border border-primary/20 bg-primary/5">
+              <div>
+                <p className="text-xs font-bold text-primary uppercase">
+                  {ticket.targetEntityType} #{ticket.targetEntityId}
+                </p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  Dự án: {ticket.targetProjectId || "GLOBAL"}
+                </p>
+              </div>
+              <Link href={`/vi/design/ds-bim?id=${ticket.targetEntityId}`}>
+                <button className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline cursor-pointer">
+                  Mở xem <ExternalLink size={12} />
+                </button>
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Discuss & Meeting Section */}
+        {latestMeeting && (
+          <div className="px-5 py-4 border-b border-border/50 bg-purple-50/50">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-purple-700 flex items-center gap-1.5">
+                <Video size={12} /> Cuộc họp đồng bộ liên phòng ban
+              </p>
+              <span className="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+                Đã xác nhận
+              </span>
+            </div>
+            <p className="text-xs text-purple-900 font-medium mb-1">
+              {latestMeeting.agenda}
+            </p>
+            <p className="text-[11px] text-purple-700 mb-2">
+              Thời gian:{" "}
+              {new Date(latestMeeting.scheduledStart).toLocaleString("vi-VN", {
+                dateStyle: "short",
+                timeStyle: "short",
+              })}
+            </p>
+            {latestMeeting.meetingUrl && (
+              <Link href={latestMeeting.meetingUrl} target="_blank">
+                <button className="text-xs font-semibold text-purple-700 hover:underline flex items-center gap-1 cursor-pointer">
+                  Vào phòng họp trực tuyến <ExternalLink size={12} />
+                </button>
+              </Link>
+            )}
+          </div>
+        )}
+
+        {/* Detailed Description */}
+        <div className="px-5 py-5 border-b border-border/50 bg-card">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
+            Mô tả &amp; Kiến nghị kỹ thuật
+          </p>
+          <p className="text-xs text-foreground/90 leading-relaxed whitespace-pre-wrap">
+            {ticket.description}
+          </p>
+        </div>
+
+        {/* Resolution Notes */}
+        {ticket.resolutionNote && (
+          <div className="px-5 py-4 border-b border-border/50 bg-emerald-50/40">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 mb-1">
+              Kết quả giải quyết
+            </p>
+            <p className="text-xs text-emerald-900 leading-relaxed">
+              {ticket.resolutionNote}
+            </p>
+          </div>
+        )}
+
+        {/* Rejection Notes */}
+        {ticket.rejectionReason && (
+          <div className="px-5 py-4 border-b border-border/50 bg-red-50/40">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-red-800 mb-1">
+              Lý do từ chối
+            </p>
+            <p className="text-xs text-red-900 leading-relaxed">
+              {ticket.rejectionReason}
+            </p>
+          </div>
+        )}
+
+        {/* SLA Metadata */}
+        <div className="px-5 py-5 bg-muted/10 flex-1">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
+            <Timer size={12} /> Chỉ số cam kết chất lượng dịch vụ (SLA)
+          </p>
+
+          <div className="grid grid-cols-1 gap-1 text-xs">
+            <div className="flex justify-between items-start py-2 border-b border-border/40">
+              <span className="text-muted-foreground">Thời điểm tạo</span>
+              <span className="font-semibold text-foreground">
+                {new Date(ticket.createdAt).toLocaleString("vi-VN")}
+              </span>
+            </div>
+            <div className="flex justify-between items-start py-2 border-b border-border/40">
+              <span className="text-muted-foreground">
+                Hạn phản hồi (Response SLA)
+              </span>
+              <span className="font-semibold text-foreground">
+                {ticket.responseDueAt
+                  ? new Date(ticket.responseDueAt).toLocaleString("vi-VN")
+                  : "Chưa thiết lập"}
+              </span>
+            </div>
+            <div className="flex justify-between items-start py-2 border-b border-border/40">
+              <span className="text-muted-foreground">
+                Hạn giải quyết (Resolution SLA)
+              </span>
+              <span className="font-semibold text-foreground">
+                {ticket.resolutionDueAt
+                  ? new Date(ticket.resolutionDueAt).toLocaleString("vi-VN")
+                  : "Chưa thiết lập"}
+              </span>
+            </div>
+            <div className="flex justify-between items-start py-2">
+              <span className="text-muted-foreground">Trạng thái SLA</span>
+              <span
+                className={cn(
+                  "font-semibold",
+                  ticket.isSlaBreached ? "text-red-600" : "text-emerald-600",
+                )}
+              >
+                {ticket.isSlaBreached
+                  ? "Vi phạm thời gian cam kết"
+                  : "Trong tầm kiểm soát"}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer Action Buttons */}
+      <div className="p-4 border-t border-border bg-card shrink-0 flex items-center justify-between gap-2">
+        {ticket.status === TicketStatus.SUBMITTED && (
+          <>
+            <ActionButton
+              variant="secondary"
+              className="flex-1 text-xs cursor-pointer"
+              onClick={onAssign}
+              disabled={isAssigning}
+            >
+              <User size={13} className="mr-1.5" /> Phân công
+            </ActionButton>
+            <ActionButton
+              variant="outline"
+              className="text-xs border-red-200 text-red-600 hover:bg-red-50 cursor-pointer"
+              onClick={onReject}
+              disabled={isRejecting}
+            >
+              <XCircle size={13} className="mr-1.5" /> Từ chối
+            </ActionButton>
+          </>
+        )}
+
+        {ticket.status === TicketStatus.IN_PROGRESS && (
+          <>
+            <ActionButton
+              variant="secondary"
+              className="flex-1 text-xs cursor-pointer"
+              onClick={onSchedule}
+              disabled={isScheduling}
+            >
+              <Video size={13} className="mr-1.5" /> Lên lịch họp
+            </ActionButton>
+            <ActionButton
+              variant="primary"
+              className="flex-1 text-xs bg-emerald-600 hover:bg-emerald-700 cursor-pointer"
+              onClick={onResolve}
+              disabled={isResolving}
+            >
+              <CheckCircle2 size={13} className="mr-1.5" /> Giải quyết
+            </ActionButton>
+          </>
+        )}
+
+        {ticket.status === TicketStatus.MEETING_SCHEDULED && (
+          <ActionButton
+            variant="primary"
+            className="flex-1 text-xs bg-emerald-600 hover:bg-emerald-700 cursor-pointer"
+            onClick={onResolve}
+            disabled={isResolving}
+          >
+            <CheckCircle2 size={13} className="mr-1.5" /> Ghi biên bản &amp;
+            Giải quyết
+          </ActionButton>
+        )}
+
+        {ticket.status === TicketStatus.RESOLVED && (
+          <>
+            <ActionButton
+              variant="outline"
+              className="flex-1 text-xs text-rose-600 border-rose-200 hover:bg-rose-50 cursor-pointer"
+              onClick={onReopen}
+              disabled={isReopening}
+            >
+              <RefreshCw size={13} className="mr-1.5" /> Mở lại
+            </ActionButton>
+            <ActionButton
+              variant="primary"
+              className="flex-1 text-xs cursor-pointer"
+              onClick={onCloseAction}
+              isLoading={isClosing}
+            >
+              <Check size={13} className="mr-1.5" /> Đóng phiếu
+            </ActionButton>
+          </>
+        )}
+
+        {(ticket.status === TicketStatus.CLOSED ||
+          ticket.status === TicketStatus.REJECTED) && (
+          <ActionButton
+            variant="outline"
+            className="w-full text-xs text-rose-600 border-rose-200 hover:bg-rose-50 cursor-pointer"
+            onClick={onReopen}
+            disabled={isReopening}
+          >
+            <RefreshCw size={13} className="mr-1.5" /> Khiếu nại / Mở lại ticket
+          </ActionButton>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Table-Row Item Component For Mobile ────────────────────────────────────
+function MobileTicketRow({
+  ticket,
+  onSelect,
+}: {
+  ticket: Ticket;
+  onSelect: (t: Ticket) => void;
+}) {
+  const prioCfg = PRIORITY_CONFIG[ticket.priority];
+  const statusCfg = STATUS_CONFIG[ticket.status];
+  const isOverdue =
+    ticket.isSlaBreached ||
+    (ticket.resolutionDueAt &&
+      // eslint-disable-next-line react-hooks/purity
+      new Date(ticket.resolutionDueAt).getTime() < Date.now() &&
+      ticket.status !== TicketStatus.RESOLVED &&
+      ticket.status !== TicketStatus.CLOSED);
+
+  return (
+    <div
+      onClick={() => onSelect(ticket)}
+      className="flex items-center justify-between py-2.5 px-3 border-b border-border/60 hover:bg-muted/20 active:bg-muted/40 transition-colors cursor-pointer group text-xs select-none"
+    >
+      <div className="flex-1 min-w-0 pr-2.5">
+        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+          <span className="font-mono text-[10px] font-bold text-primary">
+            {ticket.ticketCode}
+          </span>
+          <Badge config={statusCfg} label={ticket.status} />
+          <Badge config={prioCfg} label={ticket.priority} />
+        </div>
+
+        <p className="font-semibold text-foreground text-xs truncate leading-snug">
+          {ticket.title}
+        </p>
+
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5 truncate">
+          <span className="truncate">{ticket.requesterDepartmentId}</span>
+          <ArrowRight size={10} className="shrink-0" />
+          <span className="font-medium text-foreground truncate">
+            {ticket.targetDepartmentId}
+          </span>
+          <span>•</span>
+          <span
+            className={cn(
+              "font-mono tabular-nums",
+              isOverdue ? "text-red-600 font-bold" : "",
+            )}
+          >
+            {ticket.resolutionDueAt
+              ? new Date(ticket.resolutionDueAt).toLocaleDateString("vi-VN")
+              : "Không SLA"}
+          </span>
+        </div>
+      </div>
+
+      <div
+        className="flex items-center gap-1 shrink-0"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {ticket.targetEntityId && (
+          <Link
+            href={`/vi/design/ds-bim?id=${ticket.targetEntityId}`}
+            className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+            title="Đến thực thể ERP liên kết"
+          >
+            <ExternalLink size={14} />
+          </Link>
+        )}
+        <button
+          type="button"
+          onClick={() => onSelect(ticket)}
+          className="p-1.5 rounded-md text-muted-foreground/60 group-hover:text-primary transition-colors cursor-pointer"
+          title="Xem chi tiết"
+        >
+          <ChevronRight size={15} />
+        </button>
       </div>
     </div>
   );
@@ -951,13 +1357,14 @@ export default function TicketsContent() {
   });
 
   const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: parseInt(searchParams.get("page") || "1", 10) - 1,
+    pageIndex: Math.max(0, parseInt(searchParams.get("page") || "1", 10) - 1),
     pageSize: parseInt(searchParams.get("limit") || "20", 10),
   });
 
   // UI Interactive States
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [isRightCollapsed, setIsRightCollapsed] = useState(true);
+  const [showMobileFilter, setShowMobileFilter] = useState(false);
 
   // Active Modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -1037,7 +1444,6 @@ export default function TicketsContent() {
     router,
   ]);
 
-  // Auto-select từ ID query parameter
   useEffect(() => {
     const idFromUrl = searchParams.get("id");
     if (idFromUrl && !selectedTicket && fetchedTickets.length > 0) {
@@ -1049,9 +1455,7 @@ export default function TicketsContent() {
     }
   }, [fetchedTickets, selectedTicket, searchParams]);
 
-  // ─── ACTION HANDLERS WITH RTK MUTATIONS ───────────────────────────────────
-
-  // 1. Create
+  // Action Handlers
   const handleCreateTicketSubmit = async (dto: CreateTicketDto) => {
     try {
       const res = await createTicket(dto).unwrap();
@@ -1063,7 +1467,6 @@ export default function TicketsContent() {
         description: `Mã phiếu: ${res.data?.ticketCode || "Đang xử lý"}`,
       });
     } catch (err: any) {
-      console.error("Chi tiết lỗi Create Ticket:", err);
       const serverError =
         err?.data?.message || err?.error || "Không thể khởi tạo Ticket";
       gooeyToast.error(
@@ -1072,7 +1475,6 @@ export default function TicketsContent() {
     }
   };
 
-  // 2. Assign / Handover
   const handleAssignSubmit = async (data: {
     assigneeId: string;
     internalHandoverNote?: string;
@@ -1090,7 +1492,6 @@ export default function TicketsContent() {
     }
   };
 
-  // 3. Schedule Sync Meeting
   const handleScheduleMeetingSubmit = async (data: {
     agenda: string;
     scheduledStart: string;
@@ -1109,7 +1510,6 @@ export default function TicketsContent() {
     }
   };
 
-  // 4. Resolve
   const handleResolveSubmit = async (resolutionNote: string) => {
     if (!selectedTicket) return;
     try {
@@ -1124,7 +1524,6 @@ export default function TicketsContent() {
     }
   };
 
-  // 5. Reject
   const handleRejectSubmit = async (rejectionReason: string) => {
     if (!selectedTicket) return;
     try {
@@ -1139,7 +1538,6 @@ export default function TicketsContent() {
     }
   };
 
-  // 6. Close
   const handleCloseAction = async () => {
     if (!selectedTicket) return;
     try {
@@ -1151,7 +1549,6 @@ export default function TicketsContent() {
     }
   };
 
-  // 7. Reopen
   const handleReopenSubmit = async (reason: string) => {
     if (!selectedTicket) return;
     try {
@@ -1164,6 +1561,29 @@ export default function TicketsContent() {
     } catch {
       gooeyToast.error("Lỗi mở lại ticket");
     }
+  };
+
+  const handleSearchChange = (val: string) => {
+    setGlobalFilter(val);
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  };
+
+  const handleFilterChange = (
+    setter: React.Dispatch<React.SetStateAction<any>>,
+    value: any,
+  ) => {
+    setter(value);
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }));
+  };
+
+  const clearAllFilters = () => {
+    setGlobalFilter("");
+    setCategoryFilter([]);
+    setStatusFilter([]);
+    setPriorityFilter([]);
+    setTargetDeptFilter([]);
+    setDateRange(undefined);
+    setPagination((p) => ({ ...p, pageIndex: 0 }));
   };
 
   // Columns definition
@@ -1331,15 +1751,7 @@ export default function TicketsContent() {
     targetDeptFilter.length +
     (dateRange?.from ? 1 : 0);
 
-  const clearAllFilters = () => {
-    setGlobalFilter("");
-    setCategoryFilter([]);
-    setStatusFilter([]);
-    setPriorityFilter([]);
-    setTargetDeptFilter([]);
-    setDateRange(undefined);
-  };
-
+  // ─── FACET FILTERS NODE (INLINE INSIDE DATATABLE TOOLBAR) ───
   const facetFiltersNode = (
     <div className="flex items-center gap-2 flex-wrap">
       <Popover>
@@ -1347,7 +1759,7 @@ export default function TicketsContent() {
           <Button
             variant="outline"
             className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 h-auto min-h-[30px] text-xs font-medium border rounded transition-colors shadow-none",
+              "flex items-center gap-1.5 px-3 py-1.5 h-auto min-h-[30px] text-xs font-medium border rounded transition-colors shadow-none cursor-pointer",
               dateRange?.from
                 ? "border-primary bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
                 : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -1373,6 +1785,7 @@ export default function TicketsContent() {
                 onClick={(e) => {
                   e.stopPropagation();
                   setDateRange(undefined);
+                  setPagination((p) => ({ ...p, pageIndex: 0 }));
                 }}
                 className="ml-1 hover:text-red-500"
               >
@@ -1386,7 +1799,10 @@ export default function TicketsContent() {
             autoFocus
             mode="range"
             selected={dateRange}
-            onSelect={setDateRange}
+            onSelect={(r) => {
+              setDateRange(r);
+              setPagination((p) => ({ ...p, pageIndex: 0 }));
+            }}
             numberOfMonths={2}
             locale={vi}
           />
@@ -1400,7 +1816,7 @@ export default function TicketsContent() {
           label: v.label,
         }))}
         selected={categoryFilter}
-        onChange={setCategoryFilter}
+        onChange={(v) => handleFilterChange(setCategoryFilter, v)}
       />
 
       <FacetFilter
@@ -1410,7 +1826,7 @@ export default function TicketsContent() {
           label: v.label,
         }))}
         selected={statusFilter}
-        onChange={setStatusFilter}
+        onChange={(v) => handleFilterChange(setStatusFilter, v)}
       />
 
       <FacetFilter
@@ -1420,20 +1836,21 @@ export default function TicketsContent() {
           label: v.label,
         }))}
         selected={priorityFilter}
-        onChange={setPriorityFilter}
+        onChange={(v) => handleFilterChange(setPriorityFilter, v)}
       />
 
       <FacetFilter
         label="Phòng ban tiếp nhận"
         options={DEPARTMENTS.map((d) => ({ value: d.id, label: d.name }))}
         selected={targetDeptFilter}
-        onChange={setTargetDeptFilter}
+        onChange={(v) => handleFilterChange(setTargetDeptFilter, v)}
       />
 
       {activeFilterCount > 0 && (
         <button
+          type="button"
           onClick={clearAllFilters}
-          className="ml-2 text-xs text-red-600 hover:underline"
+          className="ml-2 text-xs text-red-600 hover:underline cursor-pointer"
         >
           Xóa {activeFilterCount} bộ lọc
         </button>
@@ -1444,75 +1861,163 @@ export default function TicketsContent() {
   return (
     <div className="flex flex-col h-full overflow-hidden bg-background">
       {/* ── HEADER ── */}
-      <div className="flex-shrink-0 px-4 md:px-5 py-3 border-b border-border bg-card">
+      <div className="shrink-0 px-4 md:px-5 py-3 border-b border-border bg-card">
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary border border-primary/20 shrink-0">
               <TicketIcon size={18} />
             </div>
             <div>
               <h1 className="text-base md:text-lg font-bold text-foreground">
-                Điều phối & Phối hợp Liên phòng ban (ESM)
+                Điều phối &amp; Phối hợp Liên phòng ban (ESM)
               </h1>
               <p className="text-xs text-muted-foreground">
                 Theo dõi hợp đồng cộng tác, xung đột kỹ thuật và kiểm soát SLA
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <ActionButton
               variant="primary"
-              className="!h-8 !px-3 !text-xs !font-semibold"
+              className="!h-8 !px-2 sm:!px-3 !text-xs !font-semibold cursor-pointer"
               onClick={() => setIsCreateModalOpen(true)}
+              title="Tạo Phiếu yêu cầu"
             >
-              <Plus size={14} className="mr-1.5" /> Tạo Phiếu yêu cầu
+              <Plus size={14} className="shrink-0 sm:mr-1.5" />
+              <span className="hidden sm:inline">Tạo Phiếu yêu cầu</span>
             </ActionButton>
             <ActionButton
               variant="ghost"
-              className="!h-8 !px-3 !text-xs !font-medium"
+              className="!h-8 !px-2 sm:!px-3 !text-xs !font-medium cursor-pointer"
               onAction={async () => {
                 refetch();
               }}
               isLoading={isFetching}
+              title="Làm mới"
             >
-              <RefreshCw size={14} className="mr-1.5" /> Làm mới
+              <RefreshCw
+                size={14}
+                className={`shrink-0 ${isFetching ? "animate-spin" : ""} sm:mr-1.5`}
+              />
+              <span className="hidden sm:inline">Làm mới</span>
             </ActionButton>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3 mt-4">
-          <div className="relative flex-1 min-w-0 max-w-xs">
-            <Search
-              size={14}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-            />
-            <input
-              type="text"
-              value={globalFilter}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              placeholder="Tìm theo Mã phiếu, Dự án, Nội dung..."
-              className="input-base pl-9 py-1.5 text-xs w-full bg-muted/30 focus:bg-background"
-            />
-          </div>
-          <div className="hidden xl:flex items-center gap-2">
-            {facetFiltersNode}
-          </div>
-          <div className="xl:hidden">
-            <MobileFilterSheet
-              activeCount={activeFilterCount}
-              onClearAll={clearAllFilters}
-            >
-              {facetFiltersNode}
-            </MobileFilterSheet>
           </div>
         </div>
       </div>
 
-      {/* ── LAYOUT ── */}
-      <div className="flex-1 min-h-0 relative">
+      {/* ── MOBILE LIST VIEW (< md) ── */}
+      <div className="flex-1 min-h-0 flex flex-col md:hidden overflow-hidden">
+        {/* Mobile Search & Drawer Trigger */}
+        <div className="p-3 border-b border-border bg-card flex items-center gap-2 shrink-0">
+          <div className="relative flex-1">
+            <Search
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
+            />
+            <input
+              type="text"
+              value={globalFilter}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              placeholder="Tìm theo Mã phiếu, Dự án, Nội dung..."
+              className="input-base pl-9 pr-7 py-1 text-xs w-full h-8"
+            />
+            {globalFilter && (
+              <button
+                type="button"
+                onClick={() => handleSearchChange("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground cursor-pointer"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowMobileFilter(true)}
+            className={`h-8 px-2.5 rounded-lg border flex items-center justify-center gap-1.5 text-xs transition-colors shrink-0 cursor-pointer ${
+              activeFilterCount > 0
+                ? "bg-primary/10 border-primary text-primary font-semibold"
+                : "border-border bg-background text-muted-foreground hover:bg-muted"
+            }`}
+            title="Mở bộ lọc & Sắp xếp"
+          >
+            <SlidersHorizontal size={13} />
+            {activeFilterCount > 0 && (
+              <span className="w-4 h-4 rounded-full bg-primary text-white font-mono text-[9px] flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Scrollable Table-Row List */}
+        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar divide-y divide-border/40">
+          {fetchedTickets.length === 0 && !isFetching ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
+              <TicketIcon size={32} className="text-muted-foreground/30" />
+              <p className="text-xs font-semibold text-muted-foreground">
+                Không tìm thấy phiếu yêu cầu phối hợp nào
+              </p>
+            </div>
+          ) : (
+            fetchedTickets.map((t) => (
+              <MobileTicketRow
+                key={t.id}
+                ticket={t}
+                onSelect={(selected) => {
+                  setSelectedTicket(selected);
+                  setIsRightCollapsed(false);
+                }}
+              />
+            ))
+          )}
+        </div>
+
+        {/* ── DOCKED MOBILE BOTTOM PAGINATION ── */}
+        <div className="shrink-0 flex items-center justify-between px-4 py-2 border-t border-border bg-card text-xs text-muted-foreground">
+          <span className="font-mono text-[11px]">
+            {pagination.pageIndex * pagination.pageSize + 1}-
+            {Math.min(
+              (pagination.pageIndex + 1) * pagination.pageSize,
+              totalRows,
+            )}{" "}
+            / {totalRows}
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              disabled={pagination.pageIndex === 0 || isFetching}
+              onClick={() =>
+                setPagination((p) => ({ ...p, pageIndex: p.pageIndex - 1 }))
+              }
+              className="p-1.5 rounded-md border border-border bg-background hover:bg-muted disabled:opacity-40 cursor-pointer"
+              title="Trang trước"
+            >
+              <ChevronLeft size={14} />
+            </button>
+            <span className="font-mono text-[11px] px-1 font-semibold text-foreground">
+              {pagination.pageIndex + 1}/{pageCount || 1}
+            </span>
+            <button
+              type="button"
+              disabled={pagination.pageIndex >= pageCount - 1 || isFetching}
+              onClick={() =>
+                setPagination((p) => ({ ...p, pageIndex: p.pageIndex + 1 }))
+              }
+              className="p-1.5 rounded-md border border-border bg-background hover:bg-muted disabled:opacity-40 cursor-pointer"
+              title="Trang sau"
+            >
+              <ChevronRight size={14} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── DESKTOP INTERFACE (md:) ── */}
+      <div className="flex-1 min-h-0 relative hidden md:block">
         <DetailLayout
           title="Chi tiết Phiếu"
-          // leftSidebar={{ defaultCollapsed: true, content: () => null }}
           rightSidebar={{
             collapsed: isRightCollapsed || !selectedTicket,
             onCollapseChange: setIsRightCollapsed,
@@ -1529,347 +2034,39 @@ export default function TicketsContent() {
                 );
               }
 
-              const catCfg = CATEGORY_CONFIG[selectedTicket.category];
-              const prioCfg = PRIORITY_CONFIG[selectedTicket.priority];
-              const statusCfg = STATUS_CONFIG[selectedTicket.status];
-              const meetings = selectedTicket.meetings || [];
-              const latestMeeting =
-                meetings.length > 0 ? meetings[meetings.length - 1] : null;
-
               return (
-                <div className="flex flex-col h-full fade-in bg-card">
-                  {/* ── HEADER PANE ── */}
-                  <div className="p-5 border-b border-border/50 relative shrink-0 bg-muted/10">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <Badge
-                          config={catCfg}
-                          label={selectedTicket.category}
-                        />
-                        <Badge
-                          config={prioCfg}
-                          label={selectedTicket.priority}
-                        />
-                        <Badge
-                          config={statusCfg}
-                          label={selectedTicket.status}
-                        />
-                      </div>
-                      <span className="font-mono text-xs font-bold text-primary">
-                        {selectedTicket.ticketCode}
-                      </span>
-                    </div>
-
-                    <h2 className="text-base font-bold text-foreground leading-snug mb-3">
-                      {selectedTicket.title}
-                    </h2>
-
-                    {/* Routing Pipeline Strip */}
-                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-background border border-border/60 text-xs">
-                      <div>
-                        <span className="text-[10px] text-muted-foreground uppercase block font-semibold">
-                          Khởi tạo bởi
-                        </span>
-                        <span className="font-semibold text-foreground">
-                          {selectedTicket.requesterDepartmentId}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground block font-mono">
-                          ID: {selectedTicket.requesterId.slice(0, 8)}
-                        </span>
-                      </div>
-                      <ArrowRight
-                        size={14}
-                        className="text-muted-foreground/60"
-                      />
-                      <div className="text-right">
-                        <span className="text-[10px] text-muted-foreground uppercase block font-semibold">
-                          Đích tiếp nhận
-                        </span>
-                        <span className="font-semibold text-primary">
-                          {selectedTicket.targetDepartmentId}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground block">
-                          {selectedTicket.assigneeId
-                            ? `Giao cho: ${selectedTicket.assigneeId.slice(0, 8)}`
-                            : "Hàng đợi chung"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ── BODY PANE (FLAT DESIGN) ── */}
-                  <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
-                    {/* 1. Contextual ERP Link */}
-                    {selectedTicket.targetEntityType && (
-                      <div className="px-5 py-4 border-b border-border/50 bg-card">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
-                          <FolderGit2 size={12} /> Thực thể dữ liệu liên kết
-                        </p>
-                        <div className="flex items-center justify-between p-3 rounded-lg border border-primary/20 bg-primary/5">
-                          <div>
-                            <p className="text-xs font-bold text-primary uppercase">
-                              {selectedTicket.targetEntityType} #
-                              {selectedTicket.targetEntityId}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground mt-0.5">
-                              Dự án:{" "}
-                              {selectedTicket.targetProjectId || "GLOBAL"}
-                            </p>
-                          </div>
-                          <Link
-                            href={`/vi/design/ds-bim?id=${selectedTicket.targetEntityId}`}
-                          >
-                            <button className="flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
-                              Mở xem <ExternalLink size={12} />
-                            </button>
-                          </Link>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 2. Discuss & Meet Section */}
-                    {latestMeeting && (
-                      <div className="px-5 py-4 border-b border-border/50 bg-purple-50/50">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-[10px] font-bold uppercase tracking-wider text-purple-700 flex items-center gap-1.5">
-                            <Video size={12} /> Cuộc họp đồng bộ liên phòng ban
-                          </p>
-                          <span className="text-[10px] font-bold bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
-                            Đã xác nhận
-                          </span>
-                        </div>
-                        <p className="text-xs text-purple-900 font-medium mb-1">
-                          {latestMeeting.agenda}
-                        </p>
-                        <p className="text-[11px] text-purple-700 mb-2">
-                          Thời gian:{" "}
-                          {new Date(
-                            latestMeeting.scheduledStart,
-                          ).toLocaleString("vi-VN", {
-                            dateStyle: "short",
-                            timeStyle: "short",
-                          })}
-                        </p>
-                        {latestMeeting.meetingUrl && (
-                          <Link href={latestMeeting.meetingUrl} target="_blank">
-                            <button className="text-xs font-semibold text-purple-700 hover:underline flex items-center gap-1">
-                              Vào phòng họp trực tuyến{" "}
-                              <ExternalLink size={12} />
-                            </button>
-                          </Link>
-                        )}
-                      </div>
-                    )}
-
-                    {/* 3. Detailed Description */}
-                    <div className="px-5 py-5 border-b border-border/50 bg-card">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
-                        Mô tả & Kiến nghị kỹ thuật
-                      </p>
-                      <p className="text-xs text-foreground/90 leading-relaxed whitespace-pre-wrap">
-                        {selectedTicket.description}
-                      </p>
-                    </div>
-
-                    {/* Resolution / Rejection Notes */}
-                    {selectedTicket.resolutionNote && (
-                      <div className="px-5 py-4 border-b border-border/50 bg-emerald-50/40">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 mb-1">
-                          Kết quả giải quyết
-                        </p>
-                        <p className="text-xs text-emerald-900 leading-relaxed">
-                          {selectedTicket.resolutionNote}
-                        </p>
-                      </div>
-                    )}
-
-                    {selectedTicket.rejectionReason && (
-                      <div className="px-5 py-4 border-b border-border/50 bg-red-50/40">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-red-800 mb-1">
-                          Lý do từ chối
-                        </p>
-                        <p className="text-xs text-red-900 leading-relaxed">
-                          {selectedTicket.rejectionReason}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* 4. SLA Metadata */}
-                    <div className="px-5 py-5 bg-muted/10 flex-1">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-1.5">
-                        <Timer size={12} /> Chỉ số cam kết chất lượng dịch vụ
-                        (SLA)
-                      </p>
-
-                      <div className="grid grid-cols-1 gap-1 text-xs">
-                        <div className="flex justify-between items-start py-2 border-b border-border/40">
-                          <span className="text-muted-foreground">
-                            Thời điểm tạo
-                          </span>
-                          <span className="font-semibold text-foreground">
-                            {new Date(selectedTicket.createdAt).toLocaleString(
-                              "vi-VN",
-                            )}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-start py-2 border-b border-border/40">
-                          <span className="text-muted-foreground">
-                            Hạn phản hồi (Response SLA)
-                          </span>
-                          <span className="font-semibold text-foreground">
-                            {selectedTicket.responseDueAt
-                              ? new Date(
-                                  selectedTicket.responseDueAt,
-                                ).toLocaleString("vi-VN")
-                              : "Chưa thiết lập"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-start py-2 border-b border-border/40">
-                          <span className="text-muted-foreground">
-                            Hạn giải quyết (Resolution SLA)
-                          </span>
-                          <span className="font-semibold text-foreground">
-                            {selectedTicket.resolutionDueAt
-                              ? new Date(
-                                  selectedTicket.resolutionDueAt,
-                                ).toLocaleString("vi-VN")
-                              : "Chưa thiết lập"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-start py-2">
-                          <span className="text-muted-foreground">
-                            Trạng thái SLA
-                          </span>
-                          <span
-                            className={cn(
-                              "font-semibold",
-                              selectedTicket.isSlaBreached
-                                ? "text-red-600"
-                                : "text-emerald-600",
-                            )}
-                          >
-                            {selectedTicket.isSlaBreached
-                              ? "Vi phạm thời gian cam kết"
-                              : "Trong tầm kiểm soát"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ── FOOTER PANE (FIXED ACTIONS HOOKED TO MUTATIONS) ── */}
-                  <div className="p-4 border-t border-border bg-card shrink-0 flex items-center justify-between gap-2">
-                    {/* Chưa phân bổ: Cho phép Tiếp nhận hoặc Phân công */}
-                    {selectedTicket.status === TicketStatus.SUBMITTED && (
-                      <>
-                        <ActionButton
-                          variant="secondary"
-                          className="flex-1 text-xs"
-                          onClick={() => setIsAssignModalOpen(true)}
-                          disabled={isAssigning}
-                        >
-                          <User size={13} className="mr-1.5" /> Phân công
-                        </ActionButton>
-                        <ActionButton
-                          variant="outline"
-                          className="text-xs border-red-200 text-red-600 hover:bg-red-50"
-                          onClick={() => setIsRejectModalOpen(true)}
-                          disabled={isRejecting}
-                        >
-                          <XCircle size={13} className="mr-1.5" /> Từ chối
-                        </ActionButton>
-                      </>
-                    )}
-
-                    {/* Đang xử lý: Cho phép Lên lịch họp & Giải quyết */}
-                    {selectedTicket.status === TicketStatus.IN_PROGRESS && (
-                      <>
-                        <ActionButton
-                          variant="secondary"
-                          className="flex-1 text-xs"
-                          onClick={() => setIsScheduleModalOpen(true)}
-                          disabled={isScheduling}
-                        >
-                          <Video size={13} className="mr-1.5" /> Lên lịch họp
-                        </ActionButton>
-                        <ActionButton
-                          variant="primary"
-                          className="flex-1 text-xs bg-emerald-600 hover:bg-emerald-700"
-                          onClick={() => setIsResolveModalOpen(true)}
-                          disabled={isResolving}
-                        >
-                          <CheckCircle2 size={13} className="mr-1.5" /> Giải
-                          quyết
-                        </ActionButton>
-                      </>
-                    )}
-
-                    {/* Đã xếp lịch họp: Có thể Giải quyết trực tiếp */}
-                    {selectedTicket.status ===
-                      TicketStatus.MEETING_SCHEDULED && (
-                      <ActionButton
-                        variant="primary"
-                        className="flex-1 text-xs bg-emerald-600 hover:bg-emerald-700"
-                        onClick={() => setIsResolveModalOpen(true)}
-                        disabled={isResolving}
-                      >
-                        <CheckCircle2 size={13} className="mr-1.5" /> Ghi biên
-                        bản & Giải quyết
-                      </ActionButton>
-                    )}
-
-                    {/* Đã giải quyết: Đóng phiếu hoặc Khiếu nại mở lại */}
-                    {selectedTicket.status === TicketStatus.RESOLVED && (
-                      <>
-                        <ActionButton
-                          variant="outline"
-                          className="flex-1 text-xs text-rose-600 border-rose-200 hover:bg-rose-50"
-                          onClick={() => setIsReopenModalOpen(true)}
-                          disabled={isReopening}
-                        >
-                          <RefreshCw size={13} className="mr-1.5" /> Mở lại
-                        </ActionButton>
-                        <ActionButton
-                          variant="primary"
-                          className="flex-1 text-xs"
-                          onClick={handleCloseAction}
-                          isLoading={isClosing}
-                        >
-                          <Check size={13} className="mr-1.5" /> Đóng phiếu
-                        </ActionButton>
-                      </>
-                    )}
-
-                    {/* Đã đóng hoặc Từ chối: Cho phép Mở lại */}
-                    {(selectedTicket.status === TicketStatus.CLOSED ||
-                      selectedTicket.status === TicketStatus.REJECTED) && (
-                      <ActionButton
-                        variant="outline"
-                        className="w-full text-xs text-rose-600 border-rose-200 hover:bg-rose-50"
-                        onClick={() => setIsReopenModalOpen(true)}
-                        disabled={isReopening}
-                      >
-                        <RefreshCw size={13} className="mr-1.5" /> Khiếu nại /
-                        Mở lại ticket
-                      </ActionButton>
-                    )}
-                  </div>
-                </div>
+                <TicketDetailPane
+                  ticket={selectedTicket}
+                  onAssign={() => setIsAssignModalOpen(true)}
+                  onSchedule={() => setIsScheduleModalOpen(true)}
+                  onResolve={() => setIsResolveModalOpen(true)}
+                  onReject={() => setIsRejectModalOpen(true)}
+                  onCloseAction={handleCloseAction}
+                  onReopen={() => setIsReopenModalOpen(true)}
+                  isAssigning={isAssigning}
+                  isScheduling={isScheduling}
+                  isResolving={isResolving}
+                  isRejecting={isRejecting}
+                  isClosing={isClosing}
+                  isReopening={isReopening}
+                />
               );
             },
           }}
         >
-          {/* ── CENTER: DATA TABLE ── */}
-          <div className="flex-1 min-h-0 flex-col flex bg-background relative pb-16">
+          {/* ── CENTER: DATA TABLE WITH INTEGRATED SEARCH & FILTERS ── */}
+          <div className="flex-1 min-h-0 flex-col flex bg-background relative">
             <DataTable
               columns={columns}
               data={fetchedTickets}
               pageCount={pageCount}
               totalRows={totalRows}
-              globalFilter={""}
-              onGlobalFilterChange={() => {}}
+              globalFilter={globalFilter}
+              onGlobalFilterChange={handleSearchChange}
+              searchPlaceholder="Tìm theo Mã phiếu, Dự án, Nội dung..."
               pagination={pagination}
               onPaginationChange={setPagination}
+              facetFilters={facetFiltersNode}
               isLoading={isFetching}
               enableMultiRowSelection={true}
               onRowClick={(row) => {
@@ -1889,7 +2086,7 @@ export default function TicketsContent() {
         </DetailLayout>
       </div>
 
-      {/* ── DIALOG MODALS ── */}
+      {/* ── ACTION DIALOG MODALS ── */}
       <CreateTicketModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
@@ -1932,44 +2129,206 @@ export default function TicketsContent() {
         isLoading={isReopening}
       />
 
-      {/* ── MOBILE READING DRAWER ── */}
+      {/* ── MOBILE FULL-FEATURED DETAIL DRAWER ── */}
       <div className="md:hidden">
         <DetailDrawer
           isOpen={!!selectedTicket && !isRightCollapsed}
           onClose={() => setIsRightCollapsed(true)}
           title="Chi tiết Ticket"
+          subtitle={selectedTicket?.ticketCode}
+          icon={<TicketIcon size={16} className="text-primary" />}
         >
           {selectedTicket && (
-            <div className="p-5 flex flex-col h-[calc(100vh-100px)]">
-              <div className="flex items-center gap-2 mb-3">
-                <Badge
-                  config={CATEGORY_CONFIG[selectedTicket.category]}
-                  label={selectedTicket.category}
-                />
-                <Badge
-                  config={PRIORITY_CONFIG[selectedTicket.priority]}
-                  label={selectedTicket.priority}
-                />
-              </div>
-              <h2 className="text-base font-bold text-foreground mb-3">
-                {selectedTicket.title}
-              </h2>
-              <div className="p-3 bg-muted/20 rounded-lg text-xs leading-relaxed mb-4">
-                {selectedTicket.description}
-              </div>
-              {selectedTicket.targetEntityId && (
-                <Link
-                  href={`/vi/design/ds-bim?id=${selectedTicket.targetEntityId}`}
-                >
-                  <button className="btn-primary w-full py-2.5 text-xs flex items-center justify-center gap-1.5">
-                    Mở thực thể liên kết <ExternalLink size={13} />
-                  </button>
-                </Link>
-              )}
-            </div>
+            <TicketDetailPane
+              ticket={selectedTicket}
+              onAssign={() => setIsAssignModalOpen(true)}
+              onSchedule={() => setIsScheduleModalOpen(true)}
+              onResolve={() => setIsResolveModalOpen(true)}
+              onReject={() => setIsRejectModalOpen(true)}
+              onCloseAction={handleCloseAction}
+              onReopen={() => setIsReopenModalOpen(true)}
+              isAssigning={isAssigning}
+              isScheduling={isScheduling}
+              isResolving={isResolving}
+              isRejecting={isRejecting}
+              isClosing={isClosing}
+              isReopening={isReopening}
+            />
           )}
         </DetailDrawer>
       </div>
+
+      {/* ── BOTTOM DRAWER FOR MOBILE FILTER ── */}
+      {showMobileFilter && (
+        <div className="fixed inset-0 z-[1000] flex flex-col justify-end bg-black/50 backdrop-blur-xs md:hidden animate-in fade-in duration-200">
+          <div
+            className="w-full bg-card rounded-t-2xl border-t border-border p-4 max-h-[82vh] flex flex-col gap-4 shadow-2xl animate-in slide-in-from-bottom duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-border">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal size={16} className="text-primary" />
+                <h3 className="font-bold text-sm text-foreground">
+                  Lọc phiếu yêu cầu (ESM)
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMobileFilter(false)}
+                className="p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1 text-xs custom-scrollbar">
+              {/* Filter: Phân loại */}
+              <div>
+                <label className="font-semibold text-foreground mb-2 block">
+                  Phân loại nghiệp vụ
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(CATEGORY_CONFIG).map(([k, v]) => {
+                    const isSelected = categoryFilter.includes(k);
+                    return (
+                      <button
+                        key={k}
+                        type="button"
+                        onClick={() => {
+                          const next = isSelected
+                            ? categoryFilter.filter((item) => item !== k)
+                            : [...categoryFilter, k];
+                          handleFilterChange(setCategoryFilter, next);
+                        }}
+                        className={`px-2.5 py-1 rounded-full border text-[11px] font-medium transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-muted/40 border-border text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {v.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Filter: Trạng thái */}
+              <div>
+                <label className="font-semibold text-foreground mb-2 block">
+                  Trạng thái xử lý
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(STATUS_CONFIG).map(([k, v]) => {
+                    const isSelected = statusFilter.includes(k);
+                    return (
+                      <button
+                        key={k}
+                        type="button"
+                        onClick={() => {
+                          const next = isSelected
+                            ? statusFilter.filter((item) => item !== k)
+                            : [...statusFilter, k];
+                          handleFilterChange(setStatusFilter, next);
+                        }}
+                        className={`px-2.5 py-1 rounded-full border text-[11px] font-medium transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-muted/40 border-border text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {v.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Filter: Mức SLA */}
+              <div>
+                <label className="font-semibold text-foreground mb-2 block">
+                  Mức độ SLA
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(PRIORITY_CONFIG).map(([k, v]) => {
+                    const isSelected = priorityFilter.includes(k);
+                    return (
+                      <button
+                        key={k}
+                        type="button"
+                        onClick={() => {
+                          const next = isSelected
+                            ? priorityFilter.filter((item) => item !== k)
+                            : [...priorityFilter, k];
+                          handleFilterChange(setPriorityFilter, next);
+                        }}
+                        className={`px-2.5 py-1 rounded-full border text-[11px] font-medium transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-muted/40 border-border text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {v.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Filter: Phòng ban tiếp nhận */}
+              <div>
+                <label className="font-semibold text-foreground mb-2 block">
+                  Phòng ban tiếp nhận
+                </label>
+                <div className="space-y-1 max-h-40 overflow-y-auto border border-border/60 rounded-lg p-2 bg-muted/10">
+                  {DEPARTMENTS.map((d) => {
+                    const isSelected = targetDeptFilter.includes(d.id);
+                    return (
+                      <div
+                        key={d.id}
+                        onClick={() => {
+                          const next = isSelected
+                            ? targetDeptFilter.filter((item) => item !== d.id)
+                            : [...targetDeptFilter, d.id];
+                          handleFilterChange(setTargetDeptFilter, next);
+                        }}
+                        className={`flex items-center justify-between p-1.5 rounded cursor-pointer transition-colors text-xs ${
+                          isSelected
+                            ? "bg-primary/10 text-primary font-semibold"
+                            : "hover:bg-muted/50 text-foreground"
+                        }`}
+                      >
+                        <span className="truncate">{d.name}</span>
+                        {isSelected && <Check size={13} />}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Sheet Actions */}
+            <div className="flex items-center gap-2 pt-2 border-t border-border">
+              {activeFilterCount > 0 && (
+                <button
+                  type="button"
+                  onClick={clearAllFilters}
+                  className="btn-secondary text-xs h-9 px-3 text-red-600 cursor-pointer"
+                >
+                  Xóa tất cả
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowMobileFilter(false)}
+                className="btn-primary text-xs h-9 flex-1 cursor-pointer"
+              >
+                Áp dụng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

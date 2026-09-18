@@ -86,17 +86,23 @@
       "email_placeholder": "alex@lab.vietdynamic.edu",
       "password_label": "Secure Password",
       "password_placeholder": "MIN 12 CHARACTERS",
+      "confirm_password_label": "Confirm Password",
+      "confirm_password_placeholder": "Must match the password",
       "btn_submitting": "Processing...",
       "btn_submit": "Register Identity",
       "has_account": "Already have an account?",
       "login_link": "Sign In here",
-      "terms_prefix": "By registering, you agree to our ",
-      "terms_protocol": "System Protocol",
+      "terms_agreement": "By registering, you agree to our ",
+      "terms_of_service": "Terms of Service",
       "terms_and": " and ",
-      "terms_operational": "Operational Terms",
+      "terms_privacy_policy": "Privacy Policy",
       "validation_name": "Full name must be at least 3 characters",
       "validation_email": "Please enter a valid institute email",
-      "validation_password": "Password must be at least 12 characters"
+      "validation_password": "Password must be at least 12 characters",
+      "validation_confirm_password": "Passwords do not match",
+      "or_auth": "Or Authenticate With",
+      "have_account": "Already have an account",
+      "error_registration_failed": "Account creation failed"
     },
     "ResetPassword": {
       "badge": "System Override",
@@ -114,7 +120,9 @@
       "abort": "ABORT PROCEDURE",
       "validation_email": "Please enter a valid institute email",
       "validation_code": "Code must be exactly 6 digits",
-      "validation_password": "Password must be at least 6 characters"
+      "validation_password": "Password must be at least 6 characters",
+      "success_message": "Password updated successfully!",
+      "error_generic": "The verification code is invalid or has expired."
     },
     "ForgotPassword": {
       "badge": "Security Protocol",
@@ -126,7 +134,24 @@
       "btn_submitting": "Transmitting...",
       "btn_submit": "Send Override Code",
       "return_login": "RETURN TO LOGIN",
-      "validation_email": "Please enter a valid institute email address"
+      "validation_email": "Please enter a valid institute email address",
+      "error_generic": "Something went wrong, please try again."
+    },
+    "ClaimProfile": {
+      "badge": "PROFILE LINK",
+      "title_1": "VERIFY",
+      "title_2": "ROLE",
+      "description": "Enter your employee code to request access to the system.",
+      "success_title": "Request sent successfully!",
+      "success_desc": "Your access request has been sent to the HR department. Please wait for approval.",
+      "code_label": "Employee Code",
+      "btn_processing": "PROCESSING...",
+      "btn_verify": "SEND LINK REQUEST",
+      "guest_hint": "Don't have an employee code?",
+      "skip_link": "Skip this step",
+      "validation_dept": "Employee code is required",
+      "validation_num": "Employee code is required",
+      "error_send_request": "Unable to send the request. Please try again."
     }
   },
   "Home": {
